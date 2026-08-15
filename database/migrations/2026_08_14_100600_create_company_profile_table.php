@@ -37,6 +37,10 @@ return new class extends Migration
             $table->unsignedBigInteger('registered_office_id')->nullable();
 
             $table->string('contact_no', 20)->nullable();
+            $table->string('email', 150)->nullable();
+            $table->string('website', 200)->nullable();
+            $table->string('tagline', 300)->nullable();
+            $table->string('logo_path', 500)->nullable()->comment('Relative path under storage/app/public');
             $table->date('licence_expiry_date')->nullable();
             $table->boolean('is_active')->default(true);
 

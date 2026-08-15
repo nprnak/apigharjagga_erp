@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanyProfile;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +42,21 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'company' => static::companyData(),
+        ];
+    }
+
+    private static function companyData(): array
+    {
+        $company = CompanyProfile::getSingleton();
+
+        return [
+            'company_name' => $company->company_name,
+            'tagline'      => $company->tagline,
+            'contact_no'   => $company->contact_no,
+            'email'        => $company->email,
+            'website'      => $company->website,
+            'logo_url'     => $company->logo_url,
         ];
     }
 }
