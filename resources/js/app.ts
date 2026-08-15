@@ -1,7 +1,5 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { createApp, h } from 'vue';
-import Vueform from '@vueform/vueform';
-import vueformConfig from '../../vueform.config';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -10,12 +8,13 @@ createInertiaApp({
     progress: {
         color: '#4B5563',
     },
-    setup({ el, App, props, plugin }) {
-        createApp({
+    async setup({ el, App, props, plugin }) {
+        const app = createApp({
             render: () => h(App, props),
-        })
-            .use(plugin)
-            .use(Vueform, vueformConfig)
-            .mount(el!);
+        });
+
+        app.use(plugin);
+
+        app.mount(el!);
     },
 });
