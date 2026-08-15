@@ -4,6 +4,7 @@ import { computed, ref } from 'vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const company = computed(() => (page.props as any).company);
 
 const sidebarOpen = ref(true);
 
@@ -38,6 +39,12 @@ const nav = [
         icon: '👤',
         name: 'admin.staff.index',
     },
+    {
+        label: 'Settings',
+        href: '/admin/settings',
+        icon: '⚙️',
+        name: 'admin.settings.edit',
+    },
 ];
 
 const currentPath = computed(() => page.url);
@@ -56,7 +63,17 @@ function isActive(href: string) {
         >
             <!-- Brand -->
             <div class="flex h-16 items-center justify-between px-4">
-                <span v-if="sidebarOpen" class="text-lg font-bold tracking-wide">Apighar Jagga</span>
+                <div v-if="sidebarOpen" class="flex items-center gap-2 overflow-hidden">
+                    <img
+                        v-if="company?.logo_url"
+                        :src="company.logo_url"
+                        alt="Logo"
+                        class="h-9 w-9 flex-shrink-0 rounded object-contain"
+                    />
+                    <span class="truncate text-sm font-bold tracking-wide leading-tight">
+                        {{ company?.company_name || 'Apighar Jagga' }}
+                    </span>
+                </div>
                 <button
                     class="rounded p-1 hover:bg-slate-700"
                     @click="sidebarOpen = !sidebarOpen"

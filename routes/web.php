@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ValuationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Public\WebsiteController;
@@ -45,5 +46,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Staff
     Route::resource('staff', StaffController::class)->except(['show', 'destroy']);
+
+    // Settings
+    Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+    Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
 });
 
