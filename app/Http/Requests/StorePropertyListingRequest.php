@@ -88,8 +88,9 @@ class StorePropertyListingRequest extends FormRequest
             'declaration_agreed' => ['required', 'accepted'],
 
             // ── Section 9: Signatures ─────────────────────────────────────
-            'applicant_name' => ['required', 'string', 'max:150'],
-            'applicant_date' => ['nullable', 'date'],
+            'applicant_name'      => ['required', 'string', 'max:150'],
+            'applicant_date'      => ['nullable', 'date', 'before_or_equal:today'],
+            'applicant_signature' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }
 
@@ -111,6 +112,10 @@ class StorePropertyListingRequest extends FormRequest
             'declaration_agreed.accepted'  => 'You must agree to the declaration to submit.',
             'purpose_other.required_if'    => 'Please specify the purpose when "Other" is selected.',
             'property_type_other.required_if' => 'Please specify the property type when "Other" is selected.',
+            'applicant_signature.required'    => 'Please upload a scanned signature image.',
+            'applicant_signature.image'       => 'Signature must be an image file.',
+            'applicant_signature.mimes'       => 'Signature must be JPG, PNG or WEBP.',
+            'applicant_signature.max'         => 'Signature image must be under 2 MB.',
         ];
     }
 }

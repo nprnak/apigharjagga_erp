@@ -33,7 +33,7 @@ class PropertyListingController extends Controller
     {
         $data = $request->validated();
 
-        $listing = DB::transaction(function () use ($data) {
+        $listing = DB::transaction(function () use ($data, $request) {
 
             // 1. Create permanent address
             $permanentAddress = Address::create([
@@ -105,6 +105,10 @@ class PropertyListingController extends Controller
                 4, '0', STR_PAD_LEFT
             );
 
+            $signaturePath = $request->file('applicant_signature')
+                ? $request->file('applicant_signature')->store('signatures/listings', 'public')
+                : null;
+
             // 6. Create property listing
             $listing = PropertyListing::create([
                 'application_no'           => $applicationNo,
@@ -123,6 +127,7 @@ class PropertyListingController extends Controller
                 'photographs_received'     => false,
                 'gis_location_verified'    => false,
                 'remarks'                  => null,
+                'applicant_signature_path' => $signaturePath,
             ]);
 
             return $listing;
