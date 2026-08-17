@@ -33,7 +33,6 @@
         "@inertiajs/vue3": "^3.0.0",
         "@tailwindcss/vite": "^4.1.11",
         "@vitejs/plugin-vue": "^6.0.0",
-        "@vueform/vueform": "^1.13.13",
         "clsx": "^2.1.1",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^3.1",
