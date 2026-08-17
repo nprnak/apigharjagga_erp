@@ -29,5 +29,6 @@ yarn-error.log
 
 /database/seeders
 
+# Documentation files
 document.md
-documentation-clientrf.md
+documentation*.md
