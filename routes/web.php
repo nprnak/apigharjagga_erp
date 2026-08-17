@@ -5,6 +5,7 @@ use App\Http\Controllers\ClientRegistrationController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\PropertyListingController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ValuationRequestController;
 
 Route::inertia('/', 'Welcome')->name('home');
 
@@ -23,3 +24,11 @@ Route::get('/client-registration/{id}/pdf', [ClientRegistrationController::class
 Route::get('/complaint', [ComplaintController::class, 'index'])->name('complaint.form');
 Route::post('/complaint', [ComplaintController::class, 'store'])->name('complaint.store');
 Route::get('/complaint/{id}/pdf', [ComplaintController::class, 'downloadPdf'])->name('complaint.pdf');
+
+Route::inertia('/annex3', 'Annex3')->name('annex3');
+
+Route::get('/annex-c', [ValuationRequestController::class, 'create'])
+    ->name('annex-c.create');
+
+Route::post('/annex-c', [ValuationRequestController::class, 'store'])
+    ->name('annex-c.store');
