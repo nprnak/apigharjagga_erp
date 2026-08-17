@@ -1,348 +1,629 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Listing Application - {{ $listing->application_no }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 10px; color: #1a1a1a; line-height: 1.5; }
+        @font-face {
+            font-family: 'NotoDevanagari';
+            font-style: normal;
+            font-weight: normal;
+            src: url('{{ str_replace("\\", "/", storage_path("fonts/NotoSansDevanagari.ttf")) }}');
+        }
+        .np {
+            font-family: 'NotoDevanagari', 'DejaVu Sans', sans-serif;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 20mm 15mm 20mm 15mm;
+        }
 
-        /* Header */
-        .header { border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px; }
-        .header-meta { display: flex; justify-content: space-between; font-size: 8px; color: #6b7280; margin-bottom: 8px; }
-        .header-title { text-align: center; }
-        .header-title h1 { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; }
-        .header-title p { font-size: 11px; color: #475569; margin-top: 2px; }
-        .header-info { display: flex; justify-content: space-between; margin-top: 10px; font-size: 9px; }
-        .header-info .field { border-bottom: 1px solid #94a3b8; min-width: 200px; display: inline-block; padding-bottom: 2px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        /* Sections */
-        .section { margin-bottom: 16px; page-break-inside: avoid; }
-        .section-title { background: #1e293b; color: #fff; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .section-subtitle { border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; margin: 8px 0 6px; font-size: 9px; font-weight: bold; color: #374151; text-transform: uppercase; }
+        body {
+            font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #000;
+            line-height: 1.4;
+        }
 
-        /* Grid */
-        .grid-2 { display: table; width: 100%; }
-        .grid-3 { display: table; width: 100%; }
-        .col { display: table-cell; padding-right: 12px; vertical-align: top; }
-        .col:last-child { padding-right: 0; }
-        .col-half { width: 50%; }
-        .col-third { width: 33.33%; }
-        .col-full { width: 100%; }
+        /* ── Header ───────────────────────────────────── */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
 
-        /* Field */
-        .field-group { margin-bottom: 8px; }
-        .field-label { font-size: 8px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; font-weight: bold; }
-        .field-value { font-size: 10px; border-bottom: 1px solid #d1d5db; padding-bottom: 3px; min-height: 16px; color: #0f172a; }
-        .field-value.empty { color: #9ca3af; font-style: italic; }
+        .header-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
 
-        /* Checkboxes */
-        .checkbox-grid { display: table; width: 100%; }
-        .checkbox-item { display: table-cell; width: 25%; font-size: 9px; padding: 2px 0; }
-        .checkbox-box { display: inline-block; width: 10px; height: 10px; border: 1px solid #374151; vertical-align: middle; margin-right: 4px; text-align: center; line-height: 10px; font-size: 8px; }
-        .checkbox-box.checked { background: #1e293b; color: #fff; }
+        .doc-ref {
+            font-size: 7pt;
+            color: #555;
+        }
 
-        /* Declaration */
-        .declaration-box { border: 1px solid #cbd5e1; background: #f8fafc; padding: 10px; margin: 8px 0; font-size: 9px; line-height: 1.6; color: #374151; }
+        .org-name {
+            font-size: 13pt;
+            font-weight: bold;
+            text-align: center;
+        }
 
-        /* Signatures */
-        .sig-table { display: table; width: 100%; border-top: 1px solid #cbd5e1; margin-top: 12px; }
-        .sig-col { display: table-cell; width: 50%; padding-right: 20px; vertical-align: top; }
-        .sig-col:last-child { padding-right: 0; }
-        .sig-label { font-size: 8px; color: #6b7280; text-transform: uppercase; font-weight: bold; margin-bottom: 20px; }
-        .sig-line { border-bottom: 1px solid #374151; margin-bottom: 4px; }
-        .sig-name { font-size: 8px; color: #6b7280; }
+        .org-sub {
+            font-size: 9pt;
+            text-align: center;
+            color: #333;
+        }
 
-        /* Office Use */
-        .office-box { border: 2px solid #1e293b; padding: 10px; margin-top: 12px; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
-        .badge-pending { background: #fef3c7; color: #92400e; }
-        .badge-approved { background: #d1fae5; color: #065f46; }
-        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .form-title {
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 8px 0 2px;
+        }
 
-        /* Footer */
-        .footer { border-top: 1px solid #e2e8f0; margin-top: 20px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af; }
+        .form-title-np {
+            font-size: 10pt;
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+        }
 
-        .mt-4 { margin-top: 12px; }
-        .row { display: table; width: 100%; }
+        .top-line {
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 3px 0;
+        }
+
+        /* ── Meta info row ────────────────────────────── */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .meta-table td {
+            font-size: 9pt;
+            padding: 3px 5px;
+        }
+
+        .meta-label {
+            font-weight: bold;
+        }
+
+        .meta-value {
+            border-bottom: 1px dotted #000;
+            min-width: 120px;
+        }
+
+        /* ── Section headings ─────────────────────────── */
+        .section-heading {
+            font-size: 10pt;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding: 4px 0;
+            margin: 12px 0 6px;
+            text-transform: uppercase;
+        }
+
+        .section-heading span {
+            font-weight: normal;
+            font-size: 9pt;
+        }
+
+        .sub-heading {
+            font-size: 9pt;
+            font-weight: bold;
+            margin: 8px 0 4px;
+            text-decoration: underline;
+        }
+
+        /* ── Data tables ──────────────────────────────── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .data-table td {
+            padding: 4px 6px;
+            font-size: 9pt;
+            vertical-align: top;
+        }
+
+        .data-table .label {
+            font-weight: bold;
+            width: 30%;
+            color: #333;
+        }
+
+        .data-table .value {
+            border-bottom: 1px dotted #999;
+        }
+
+        .data-table .colon {
+            width: 10px;
+            text-align: center;
+        }
+
+        /* ── Bordered table (for structured data) ────── */
+        .bordered-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+
+        .bordered-table th,
+        .bordered-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            font-size: 9pt;
+            text-align: left;
+        }
+
+        .bordered-table th {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+
+        /* ── Features checklist ───────────────────────── */
+        .features-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .features-table td {
+            padding: 3px 6px;
+            font-size: 9pt;
+            width: 33.33%;
+        }
+
+        .check-box {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 1px solid #000;
+            text-align: center;
+            line-height: 10px;
+            font-size: 8pt;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .check-box.checked::after {
+            content: "✓";
+        }
+
+        /* ── Declaration ──────────────────────────────── */
+        .declaration-box {
+            border: 1px solid #000;
+            padding: 8px 10px;
+            margin: 6px 0;
+            font-size: 9pt;
+            line-height: 1.6;
+        }
+
+        /* ── Signature area ───────────────────────────── */
+        .sig-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .sig-table td {
+            width: 50%;
+            padding: 5px 10px;
+            vertical-align: top;
+            font-size: 9pt;
+        }
+
+        .sig-label {
+            font-weight: bold;
+            font-size: 8pt;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        .sig-line {
+            border-bottom: 1px solid #000;
+            margin-bottom: 3px;
+            margin-top: 30px;
+        }
+
+        .sig-meta {
+            font-size: 8pt;
+            color: #333;
+        }
+
+        /* ── Office use box ───────────────────────────── */
+        .office-box {
+            border: 2px solid #000;
+            padding: 8px;
+            margin-top: 15px;
+        }
+
+        .office-title {
+            font-weight: bold;
+            font-size: 10pt;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+
+        /* ── Footer ───────────────────────────────────── */
+        .footer {
+            margin-top: 15px;
+            padding-top: 5px;
+            border-top: 1px solid #000;
+            text-align: center;
+            font-size: 7pt;
+            color: #555;
+        }
+
+        /* ── Utilities ────────────────────────────────── */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mb-4 {
+            margin-bottom: 4px;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
+
 <body>
 
-    {{-- HEADER --}}
-    <div class="header">
-        <div class="header-meta">
-            <span>Document Code: AGJ-FRM-001 &nbsp;|&nbsp; Version: 1.0</span>
-            <span>ANNEX – A</span>
-        </div>
-        <div class="header-title">
-            <h1>Property Listing Application Form</h1>
-            <p>सम्पत्ति सूचीकरण आवेदन फाराम</p>
-        </div>
-        <div class="header-info">
-            <div>
-                <strong>Effective Date:</strong>
-                <span class="field">{{ $listing->effective_date ? $listing->effective_date->format('Y-m-d') : '___________________' }}</span>
-            </div>
-            <div>
-                <strong>Application No.:</strong>
-                <span class="field">{{ $listing->application_no }}</span>
-            </div>
-        </div>
-    </div>
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- DOCUMENT HEADER --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <table class="header-table">
+        <tr>
+            <td style="width: 25%;">
+                <span class="doc-ref">Document Code: AGJ-FRM-001<br>Version: 1.0</span>
+            </td>
+            <td style="width: 50%; text-align: center;">
+                <div class="org-name">Api Ghar Jagga Pvt. Ltd.</div>
+                <div class="org-sub np">अपि घर जग्गा प्रा. लि.</div>
+            </td>
+            <td style="width: 25%; text-align: right;">
+                <span class="doc-ref">ANNEX – A</span>
+            </td>
+        </tr>
+    </table>
 
+    <div class="top-line"></div>
+
+    <div class="form-title">Property Listing Application Form</div>
+    <div class="form-title-np np">सम्पत्ति सूचीकरण आवेदन फाराम</div>
+
+    {{-- Application meta --}}
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">Application No.:</td>
+            <td class="meta-value">{{ $listing->application_no }}</td>
+            <td class="meta-label" style="text-align: right;">Date:</td>
+            <td class="meta-value">
+                {{ $listing->date_received ? $listing->date_received->format('Y-m-d') : now()->format('Y-m-d') }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
     {{-- SECTION 1: APPLICANT DETAILS --}}
-    <div class="section">
-        <div class="section-title">1. Applicant Details &nbsp; १. आवेदकको विवरण</div>
-        <div class="row">
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Full Name / पूरा नाम</div>
-                    <div class="field-value">{{ $listing->applicant->full_name ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Citizenship No. / नागरिकता नं.</div>
-                    <div class="field-value">{{ $listing->applicant->citizenship_no ?? '—' }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Father's Name</div>
-                    <div class="field-value">{{ $listing->applicant->father_mother_name ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Grandfather's Name</div>
-                    <div class="field-value">{{ $listing->applicant->grandfather_name ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Date of Birth</div>
-                    <div class="field-value">{{ $listing->applicant->date_of_birth ? $listing->applicant->date_of_birth->format('Y-m-d') : '—' }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Mobile No.</div>
-                    <div class="field-value">{{ $listing->applicant->mobile_no ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Telephone No.</div>
-                    <div class="field-value">{{ $listing->applicant->telephone_no ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">E-mail</div>
-                    <div class="field-value">{{ $listing->applicant->email ?? '—' }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">1. Applicant Details <span class="np">/ आवेदकको विवरण</span></div>
 
+    <table class="data-table">
+        <tr>
+            <td class="label">Full Name (English)</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->full_name ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Citizenship No.</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->citizenship_no ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Father/Mother's Name</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->father_mother_name ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Grandfather's Name</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->grandfather_name ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Date of Birth</td>
+            <td class="colon">:</td>
+            <td class="value">
+                {{ $listing->applicant->date_of_birth ? $listing->applicant->date_of_birth->format('Y-m-d') : '—' }}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Mobile No.</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->mobile_no ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Telephone No.</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->telephone_no ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Email</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->email ?? '—' }}</td>
+        </tr>
+    </table>
+
+    {{-- Address sub-section --}}
+    <div class="sub-heading">Permanent Address / <span class="np">स्थायी ठेगाना</span></div>
+    <table class="data-table">
+        <tr>
+            <td class="label">Address</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->permanentAddress->full_address_text ?? '—' }}</td>
+        </tr>
+    </table>
+
+    <div class="sub-heading">Current Address / <span class="np">हालको ठेगाना</span></div>
+    <table class="data-table">
+        <tr>
+            <td class="label">Address</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->applicant->currentAddress->full_address_text ?? '—' }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
     {{-- SECTION 2: OWNERSHIP ROLE --}}
-    <div class="section">
-        <div class="section-title">2. Property Owner Details &nbsp; २. सम्पत्ति धनीको विवरण</div>
-        <div class="field-group">
-            <div class="field-label">Ownership Role / स्वामित्व भूमिका</div>
-            <div class="field-value">{{ ucwords(str_replace('_', ' ', $listing->property->ownership_role ?? '—')) }}</div>
-        </div>
-    </div>
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">2. Property Owner Details <span class="np">/ सम्पत्ति धनीको विवरण</span></div>
 
+    <table class="data-table">
+        <tr>
+            <td class="label">Ownership Role</td>
+            <td class="colon">:</td>
+            <td class="value">{{ ucwords(str_replace('_', ' ', $listing->property->ownership_role ?? '—')) }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
     {{-- SECTION 3: PROPERTY DETAILS --}}
-    <div class="section">
-        <div class="section-title">3. Property Details &nbsp; ३. सम्पत्तिको विवरण</div>
-        <div class="field-group">
-            <div class="field-label">Property Type</div>
-            <div class="field-value">{{ ucwords(str_replace('_', ' ', $listing->property->property_type ?? '—')) }}</div>
-        </div>
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">3. Property Details <span class="np">/ सम्पत्तिको विवरण</span></div>
 
-        <div class="section-subtitle">Address of Property / सम्पत्तिको ठेगाना</div>
-        <div class="row">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Province</div>
-                    <div class="field-value">{{ $listing->property->address->province ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">District</div>
-                    <div class="field-value">{{ $listing->property->address->district ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Municipality</div>
-                    <div class="field-value">{{ $listing->property->address->municipality ?? '—' }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Ward No.</div>
-                    <div class="field-value">{{ $listing->property->address->ward_no ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Tole/Locality</div>
-                    <div class="field-value">{{ $listing->property->address->tole_locality ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">GPS Location</div>
-                    <div class="field-value">
-                        @if($listing->property->address && $listing->property->address->gps_lat)
-                            {{ $listing->property->address->gps_lat }}, {{ $listing->property->address->gps_lng }}
-                        @else
-                            —
-                        @endif
+    <table class="data-table">
+        <tr>
+            <td class="label">Property Type</td>
+            <td class="colon">:</td>
+            <td class="value">{{ ucwords(str_replace('_', ' ', $listing->property->property_type ?? '—')) }}</td>
+        </tr>
+    </table>
+
+    <div class="sub-heading">Address of Property / <span class="np">सम्पत्तिको ठेगाना</span></div>
+
+    <table class="bordered-table">
+        <tr>
+            <th>Province</th>
+            <th>District</th>
+            <th>Municipality</th>
+            <th>Ward No.</th>
+        </tr>
+        <tr>
+            <td>{{ $listing->property->address->province ?? '—' }}</td>
+            <td>{{ $listing->property->address->district ?? '—' }}</td>
+            <td>{{ $listing->property->address->municipality ?? '—' }}</td>
+            <td>{{ $listing->property->address->ward_no ?? '—' }}</td>
+        </tr>
+    </table>
+
+    <table class="data-table">
+        <tr>
+            <td class="label">Tole / Locality</td>
+            <td class="colon">:</td>
+            <td class="value">{{ $listing->property->address->tole_locality ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="label">GPS Location</td>
+            <td class="colon">:</td>
+            <td class="value">
+                @if($listing->property->address && $listing->property->address->gps_lat)
+                    {{ $listing->property->address->gps_lat }}, {{ $listing->property->address->gps_lng }}
+                @else
+                    —
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <div class="sub-heading">Land Information / <span class="np">जग्गाको विवरण</span></div>
+
+    <table class="bordered-table">
+        <tr>
+            <th>Kitta No.</th>
+            <th>Area</th>
+            <th>Ownership Type</th>
+        </tr>
+        <tr>
+            <td>{{ $listing->property->kitta_no ?? '—' }}</td>
+            <td>{{ $listing->property->area ?? '—' }}</td>
+            <td>{{ $listing->property->ownership_type ?? '—' }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- SECTION 4: PURPOSE OF LISTING --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">4. Purpose of Listing <span class="np">/ सूचीकरणको उद्देश्य</span></div>
+
+    <table class="data-table">
+        <tr>
+            <td class="label">Purpose</td>
+            <td class="colon">:</td>
+            <td class="value">{{ ucfirst($listing->purpose_of_listing) }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- SECTION 5: EXPECTED PRICE --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">5. Expected Price <span class="np">/ अपेक्षित मूल्य</span></div>
+
+    <table class="bordered-table">
+        <tr>
+            <th>Description</th>
+            <th>Amount (NPR)</th>
+        </tr>
+        <tr>
+            <td>Expected Selling Price</td>
+            <td>{{ $listing->expected_selling_price ? 'Rs. ' . number_format($listing->expected_selling_price, 2) : '—' }}
+            </td>
+        </tr>
+        <tr>
+            <td>Minimum Acceptable Price</td>
+            <td>{{ $listing->minimum_acceptable_price ? 'Rs. ' . number_format($listing->minimum_acceptable_price, 2) : '—' }}
+            </td>
+        </tr>
+        <tr>
+            <td>Rental Amount (per month)</td>
+            <td>{{ $listing->rental_amount ? 'Rs. ' . number_format($listing->rental_amount, 2) . ' /month' : '—' }}
+            </td>
+        </tr>
+        <tr>
+            <td>Negotiable</td>
+            <td>{{ $listing->negotiable ? 'Yes' : 'No' }}</td>
+        </tr>
+    </table>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- SECTION 6: DECLARATION --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">6. Owner's Declaration <span class="np">/ सम्पत्ति धनीको घोषणा</span></div>
+
+    <div class="declaration-box">
+        <p style="margin-bottom: 6px;">
+            I hereby declare that the information provided in this application is true and correct to the best of my
+            knowledge.
+            I confirm that I am the lawful owner or authorized representative of the property and authorize
+            <strong>Api Ghar Jagga Pvt. Ltd.</strong> to inspect, market, advertise, and facilitate the sale, rental,
+            lease,
+            or transfer of the property in accordance with the agreed terms and applicable laws of Nepal.
+        </p>
+        <p class="np" style="font-size: 8pt; color: #333; font-style: italic;">
+            म यस आवेदनमा उल्लेख गरिएका सम्पूर्ण विवरणहरू सत्य तथा सही रहेको घोषणा गर्दछु। म सम्पत्तिको कानुनी धनी
+            वा अधिकृत प्रतिनिधि भएको पुष्टि गर्दछु र अपि घर जग्गा प्रा. लि. लाई सम्पत्ति निरीक्षण, बजार, विज्ञापन
+            तथा बिक्री, भाडा, लिज वा हस्तान्तरणमा सहजीकरण गर्न अख्तियारी दिन्छु।
+        </p>
+    </div>
+
+    <p style="font-size: 9pt; margin-top: 6px;">
+        <strong>☑</strong> Applicant has agreed to the above declaration.
+    </p>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- SECTION 7: SIGNATURES --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    <div class="section-heading">7. Signatures <span class="np">/ हस्ताक्षर</span></div>
+
+    <table class="sig-table">
+        <tr>
+            <td>
+                <span class="sig-label">Applicant / Property Owner</span>
+                @php
+                    $applicantSig = $listing->applicant_signature_path
+                        ? storage_path('app/public/' . $listing->applicant_signature_path)
+                        : null;
+                @endphp
+                @if($applicantSig && file_exists($applicantSig))
+                    <div style="margin: 8px 0;">
+                        <img src="{{ $applicantSig }}" style="height: 48px; max-width: 180px;">
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section-subtitle">Land Information / जग्गाको विवरण</div>
-        <div class="row">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Kitta No.</div>
-                    <div class="field-value">{{ $listing->property->kitta_no ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Area</div>
-                    <div class="field-value">{{ $listing->property->area ?? '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Ownership Type</div>
-                    <div class="field-value">{{ $listing->property->ownership_type ?? '—' }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- SECTION 4: PURPOSE --}}
-    <div class="section">
-        <div class="section-title">4. Purpose of Listing &nbsp; ४. सूचीकरणको उद्देश्य</div>
-        <div class="field-value">{{ ucfirst($listing->purpose_of_listing) }}</div>
-    </div>
-
-    {{-- SECTION 5: PRICE --}}
-    <div class="section">
-        <div class="section-title">5. Expected Price &nbsp; ५. अपेक्षित मूल्य</div>
-        <div class="row">
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Expected Selling Price</div>
-                    <div class="field-value">{{ $listing->expected_selling_price ? 'Rs. ' . number_format($listing->expected_selling_price, 2) : '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Negotiable</div>
-                    <div class="field-value">{{ $listing->negotiable ? 'Yes' : 'No' }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Minimum Acceptable Price</div>
-                    <div class="field-value">{{ $listing->minimum_acceptable_price ? 'Rs. ' . number_format($listing->minimum_acceptable_price, 2) : '—' }}</div>
-                </div>
-            </div>
-            <div class="col col-half">
-                <div class="field-group">
-                    <div class="field-label">Rental Amount</div>
-                    <div class="field-value">{{ $listing->rental_amount ? 'Rs. ' . number_format($listing->rental_amount, 2) . '/mo' : '—' }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- SECTION 8: DECLARATION --}}
-    <div class="section">
-        <div class="section-title">8. Owner's Declaration &nbsp; ८. सम्पत्ति धनीको घोषणा</div>
-        <div class="declaration-box">
-            I hereby declare that the information provided in this application is true and correct to the best of my knowledge.
-            I confirm that I am the lawful owner or authorized representative of the property and authorize Api Ghar Jagga
-            to inspect, market, advertise, and facilitate the sale, rental, lease, or transfer of the property.
-        </div>
-        <div style="margin-top: 6px; font-size: 9px;">
-            <span style="font-weight: bold;">✓</span> Applicant has agreed to the above declaration.
-        </div>
-    </div>
-
-    {{-- SECTION 9: SIGNATURES --}}
-    <div class="section">
-        <div class="section-title">9. Signatures &nbsp; ९. हस्ताक्षर</div>
-        <div class="sig-table">
-            <div class="sig-col">
-                <div class="sig-label">Applicant / Property Owner</div>
-                <br><br>
+                @else
+                    <div class="sig-line"></div>
+                @endif
+                <div class="sig-meta">Name: {{ $listing->applicant->full_name ?? '____________________________' }}</div>
+                <div class="sig-meta">Date: {{ now()->format('Y-m-d') }}</div>
+            </td>
+            <td>
+                <span class="sig-label">Received By (Api Ghar Jagga)</span>
                 <div class="sig-line"></div>
-                <div class="sig-name">{{ $listing->applicant->full_name ?? '____________________________' }}</div>
-                <div class="sig-name" style="margin-top:4px;">Date: {{ now()->format('Y-m-d') }}</div>
-            </div>
-            <div class="sig-col">
-                <div class="sig-label">Received By (Api Ghar Jagga)</div>
-                <br><br>
-                <div class="sig-line"></div>
-                <div class="sig-name">____________________________</div>
-                <div class="sig-name" style="margin-top:4px;">Date: ___________________</div>
-            </div>
-        </div>
-    </div>
+                <div class="sig-meta">Name: ____________________________</div>
+                <div class="sig-meta">Date: ____________________________</div>
+            </td>
+        </tr>
+    </table>
 
-    {{-- OFFICE USE ONLY --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- SECTION 8: OFFICE USE ONLY --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
     <div class="office-box">
-        <div class="section-title" style="margin-bottom:10px;">10. Office Use Only &nbsp; १०. कार्यालय प्रयोजनका लागि मात्र</div>
-        <div class="row">
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Application No.</div>
-                    <div class="field-value">{{ $listing->application_no }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Date Received</div>
-                    <div class="field-value">{{ $listing->date_received ? $listing->date_received->format('Y-m-d') : now()->format('Y-m-d') }}</div>
-                </div>
-            </div>
-            <div class="col col-third">
-                <div class="field-group">
-                    <div class="field-label">Listing Status</div>
-                    <div class="field-value">
-                        <span class="badge badge-{{ $listing->listing_status }}">{{ ucfirst($listing->listing_status) }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="office-title">For Office Use Only / <span class="np">कार्यालय प्रयोजनका लागि मात्र</span></div>
+
+        <table class="bordered-table">
+            <tr>
+                <th>Application No.</th>
+                <th>Date Received</th>
+                <th>Listing Status</th>
+            </tr>
+            <tr>
+                <td>{{ $listing->application_no }}</td>
+                <td>{{ $listing->date_received ? $listing->date_received->format('Y-m-d') : now()->format('Y-m-d') }}
+                </td>
+                <td>{{ ucfirst($listing->listing_status) }}</td>
+            </tr>
+        </table>
+
+        <table class="data-table">
+            <tr>
+                <td class="label">Verified By</td>
+                <td class="colon">:</td>
+                <td class="value">____________________________</td>
+            </tr>
+            <tr>
+                <td class="label">Approved By</td>
+                <td class="colon">:</td>
+                <td class="value">____________________________</td>
+            </tr>
+            <tr>
+                <td class="label">Remarks</td>
+                <td class="colon">:</td>
+                <td class="value">{{ $listing->remarks ?? '' }}</td>
+            </tr>
+        </table>
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- FOOTER --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
     <div class="footer">
         © Api Ghar Jagga Pvt. Ltd. &nbsp;|&nbsp; Document Code: AGJ-FRM-001 &nbsp;|&nbsp; Version 1.0 &nbsp;|&nbsp;
         Generated: {{ now()->format('Y-m-d H:i') }}
     </div>
 
 </body>
+
 </html>

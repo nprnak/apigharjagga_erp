@@ -311,6 +311,32 @@
                                 </FormField>
 
                                 <FormField
+                                    label="Father's Name"
+                                    :error="errors.father_name"
+                                >
+                                    <input
+                                        v-model="form.father_name"
+                                        type="text"
+                                        placeholder="Enter father's name"
+                                        :class="inputClass(errors.father_name)"
+                                    />
+                                </FormField>
+
+                                <FormField
+                                    label="Grandfather's Name"
+                                    :error="errors.grandfather_name"
+                                >
+                                    <input
+                                        v-model="form.grandfather_name"
+                                        type="text"
+                                        placeholder="Enter grandfather's name"
+                                        :class="
+                                            inputClass(errors.grandfather_name)
+                                        "
+                                    />
+                                </FormField>
+
+                                <FormField
                                     label="Mobile No."
                                     required
                                     :error="errors.mobile_no"
@@ -331,6 +357,26 @@
                                 </FormField>
 
                                 <FormField
+                                    label="Telephone No."
+                                    :error="errors.telephone_no"
+                                    hint="Landline, 7–10 digits"
+                                >
+                                    <input
+                                        v-model="form.telephone_no"
+                                        type="tel"
+                                        placeholder="e.g. 014XXXXXX"
+                                        :class="inputClass(errors.telephone_no)"
+                                        @blur="validateField('telephone_no')"
+                                        @input="
+                                            form.telephone_no =
+                                                form.telephone_no
+                                                    .replace(/\D/g, '')
+                                                    .slice(0, 10)
+                                        "
+                                    />
+                                </FormField>
+
+                                <FormField
                                     label="Email Address"
                                     :error="errors.email"
                                 >
@@ -340,6 +386,18 @@
                                         placeholder="example@email.com"
                                         :class="inputClass(errors.email)"
                                         @blur="validateField('email')"
+                                    />
+                                </FormField>
+
+                                <FormField
+                                    label="Occupation"
+                                    :error="errors.occupation"
+                                >
+                                    <input
+                                        v-model="form.occupation"
+                                        type="text"
+                                        placeholder="Enter occupation"
+                                        :class="inputClass(errors.occupation)"
                                     />
                                 </FormField>
 
@@ -457,7 +515,331 @@
                                         </span>
                                     </label>
                                 </div>
+                                <input
+                                    v-if="form.property_type === 'other'"
+                                    v-model="form.property_type_other"
+                                    type="text"
+                                    placeholder="Please specify property type"
+                                    :class="
+                                        inputClass(errors.property_type_other) +
+                                        ' mt-3'
+                                    "
+                                    @blur="
+                                        validateField('property_type_other')
+                                    "
+                                />
                             </FormField>
+
+                            <div class="mt-8 border-t border-slate-100 pt-8">
+                                <h3
+                                    class="mb-6 flex items-center gap-2 text-base font-bold text-slate-800"
+                                >
+                                    <svg
+                                        class="h-5 w-5 text-emerald-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                                        />
+                                    </svg>
+                                    Land Information
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 gap-6 md:grid-cols-3"
+                                >
+                                    <FormField
+                                        label="Kitta No."
+                                        :error="errors.kitta_no"
+                                    >
+                                        <input
+                                            v-model="form.kitta_no"
+                                            type="text"
+                                            :class="inputClass(errors.kitta_no)"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Area"
+                                        :error="errors.area"
+                                        hint="e.g. 4 aana, 500 sqft"
+                                    >
+                                        <input
+                                            v-model="form.area"
+                                            type="text"
+                                            :class="inputClass(errors.area)"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Map Sheet No."
+                                        :error="errors.map_sheet_no"
+                                    >
+                                        <input
+                                            v-model="form.map_sheet_no"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.map_sheet_no)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Ownership Type"
+                                        :error="errors.ownership_type"
+                                    >
+                                        <select
+                                            v-model="form.ownership_type"
+                                            :class="
+                                                inputClass(
+                                                    errors.ownership_type,
+                                                )
+                                            "
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="private">
+                                                Private
+                                            </option>
+                                            <option value="joint">
+                                                Joint
+                                            </option>
+                                            <option value="other">
+                                                Other
+                                            </option>
+                                        </select>
+                                    </FormField>
+                                    <FormField
+                                        label="Road Access"
+                                        :error="errors.road_access"
+                                    >
+                                        <select
+                                            v-model="form.road_access"
+                                            :class="
+                                                inputClass(errors.road_access)
+                                            "
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="yes">Yes</option>
+                                            <option value="no">No</option>
+                                        </select>
+                                    </FormField>
+                                    <FormField
+                                        label="Road Width"
+                                        :error="errors.road_width"
+                                        hint="e.g. 12 ft"
+                                    >
+                                        <input
+                                            v-model="form.road_width"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.road_width)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Facing Direction"
+                                        :error="errors.facing_direction"
+                                    >
+                                        <select
+                                            v-model="form.facing_direction"
+                                            :class="
+                                                inputClass(
+                                                    errors.facing_direction,
+                                                )
+                                            "
+                                        >
+                                            <option value="">Select</option>
+                                            <option
+                                                v-for="dir in [
+                                                    'North',
+                                                    'South',
+                                                    'East',
+                                                    'West',
+                                                    'North-East',
+                                                    'North-West',
+                                                    'South-East',
+                                                    'South-West',
+                                                ]"
+                                                :key="dir"
+                                                :value="dir"
+                                            >
+                                                {{ dir }}
+                                            </option>
+                                        </select>
+                                    </FormField>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 border-t border-slate-100 pt-8">
+                                <h3
+                                    class="mb-6 flex items-center gap-2 text-base font-bold text-slate-800"
+                                >
+                                    <svg
+                                        class="h-5 w-5 text-emerald-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                        />
+                                    </svg>
+                                    Building Details
+                                    <span
+                                        class="text-xs font-normal text-slate-400 normal-case"
+                                        >(if applicable)</span
+                                    >
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 gap-6 md:grid-cols-3"
+                                >
+                                    <FormField
+                                        label="Year of Construction"
+                                        :error="errors.year_of_construction"
+                                    >
+                                        <input
+                                            v-model.number="
+                                                form.year_of_construction
+                                            "
+                                            type="number"
+                                            :max="new Date().getFullYear() + 1"
+                                            min="1900"
+                                            :class="
+                                                inputClass(
+                                                    errors.year_of_construction,
+                                                )
+                                            "
+                                            @blur="
+                                                validateField(
+                                                    'year_of_construction',
+                                                )
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="No. of Floors"
+                                        :error="errors.no_of_floors"
+                                    >
+                                        <input
+                                            v-model.number="form.no_of_floors"
+                                            type="number"
+                                            min="1"
+                                            :class="
+                                                inputClass(errors.no_of_floors)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Covered Area"
+                                        :error="errors.covered_area"
+                                        hint="e.g. 1200 sqft"
+                                    >
+                                        <input
+                                            v-model="form.covered_area"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.covered_area)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Structure Type"
+                                        :error="errors.structure_type"
+                                    >
+                                        <select
+                                            v-model="form.structure_type"
+                                            :class="
+                                                inputClass(
+                                                    errors.structure_type,
+                                                )
+                                            "
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="RCC">RCC</option>
+                                            <option value="Load Bearing">
+                                                Load Bearing
+                                            </option>
+                                            <option value="Steel">
+                                                Steel
+                                            </option>
+                                            <option value="Other">
+                                                Other
+                                            </option>
+                                        </select>
+                                    </FormField>
+                                    <FormField
+                                        label="Roof Type"
+                                        :error="errors.roof_type"
+                                    >
+                                        <input
+                                            v-model="form.roof_type"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.roof_type)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Parking"
+                                        :error="errors.parking"
+                                    >
+                                        <input
+                                            v-model="form.parking"
+                                            type="text"
+                                            placeholder="e.g. 2 cars"
+                                            :class="inputClass(errors.parking)"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Water Supply"
+                                        :error="errors.water_supply"
+                                    >
+                                        <input
+                                            v-model="form.water_supply"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.water_supply)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Electricity"
+                                        :error="errors.electricity"
+                                    >
+                                        <input
+                                            v-model="form.electricity"
+                                            type="text"
+                                            :class="
+                                                inputClass(errors.electricity)
+                                            "
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Internet"
+                                        :error="errors.internet"
+                                    >
+                                        <input
+                                            v-model="form.internet"
+                                            type="text"
+                                            :class="inputClass(errors.internet)"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Drainage"
+                                        :error="errors.drainage"
+                                    >
+                                        <input
+                                            v-model="form.drainage"
+                                            type="text"
+                                            :class="inputClass(errors.drainage)"
+                                        />
+                                    </FormField>
+                                </div>
+                            </div>
 
                             <div class="mt-8 border-t border-slate-100 pt-8">
                                 <h3
@@ -602,7 +984,7 @@
                                 class="mb-8"
                             >
                                 <div
-                                    class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-5"
+                                    class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6"
                                 >
                                     <label
                                         v-for="opt in listingPurposes"
@@ -628,6 +1010,17 @@
                                         </div>
                                     </label>
                                 </div>
+                                <input
+                                    v-if="form.purpose_of_listing === 'other'"
+                                    v-model="form.purpose_other"
+                                    type="text"
+                                    placeholder="Please specify purpose"
+                                    :class="
+                                        inputClass(errors.purpose_other) +
+                                        ' mt-3'
+                                    "
+                                    @blur="validateField('purpose_other')"
+                                />
                             </FormField>
 
                             <div
@@ -662,6 +1055,31 @@
                                         </div>
                                     </FormField>
                                     <FormField
+                                        label="Minimum Acceptable Price"
+                                        :error="errors.minimum_acceptable_price"
+                                    >
+                                        <div class="relative">
+                                            <span
+                                                class="absolute top-1/2 left-4 -translate-y-1/2 font-bold text-slate-400"
+                                                >NPR</span
+                                            >
+                                            <input
+                                                v-model.number="
+                                                    form.minimum_acceptable_price
+                                                "
+                                                type="number"
+                                                min="0"
+                                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-14 font-medium text-slate-800 transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                                                placeholder="0.00"
+                                                @blur="
+                                                    validateField(
+                                                        'minimum_acceptable_price',
+                                                    )
+                                                "
+                                            />
+                                        </div>
+                                    </FormField>
+                                    <FormField
                                         label="Rental Amount (per month)"
                                         :error="errors.rental_amount"
                                     >
@@ -686,10 +1104,98 @@
                                             />
                                         </div>
                                     </FormField>
+                                    <FormField
+                                        label="Negotiable"
+                                        :error="errors.negotiable"
+                                    >
+                                        <div class="mt-2 flex gap-4">
+                                            <label
+                                                class="flex cursor-pointer items-center gap-2"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    value="yes"
+                                                    v-model="form.negotiable"
+                                                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span
+                                                    class="text-sm font-medium text-slate-700"
+                                                    >Yes</span
+                                                >
+                                            </label>
+                                            <label
+                                                class="flex cursor-pointer items-center gap-2"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    value="no"
+                                                    v-model="form.negotiable"
+                                                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span
+                                                    class="text-sm font-medium text-slate-700"
+                                                    >No</span
+                                                >
+                                            </label>
+                                        </div>
+                                    </FormField>
                                 </div>
                             </div>
 
-                            <FormField label="Property Features" class="mb-4">
+                            <div class="mt-8 border-t border-slate-100 pt-8">
+                                <h3
+                                    class="mb-6 flex items-center gap-2 text-base font-bold text-slate-800"
+                                >
+                                    <svg
+                                        class="h-5 w-5 text-emerald-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        />
+                                    </svg>
+                                    Documents Submitted
+                                </h3>
+                                <div
+                                    class="grid grid-cols-2 gap-3 md:grid-cols-3"
+                                >
+                                    <label
+                                        v-for="doc in documentTypes"
+                                        :key="doc.value"
+                                        class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3.5 transition-all hover:bg-slate-50 [&:has(input:checked)]:border-emerald-500 [&:has(input:checked)]:bg-emerald-50/30"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :value="doc.value"
+                                            v-model="form.submitted_documents"
+                                            class="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0"
+                                        />
+                                        <span
+                                            class="text-sm font-medium text-slate-700"
+                                            >{{ doc.label }}</span
+                                        >
+                                    </label>
+                                </div>
+                                <input
+                                    v-model="form.other_documents"
+                                    type="text"
+                                    placeholder="Other documents (please specify)"
+                                    :class="
+                                        inputClass(errors.other_documents) +
+                                        ' mt-3'
+                                    "
+                                />
+                            </div>
+
+                            <FormField
+                                label="Property Features"
+                                class="mt-8 mb-4"
+                            >
                                 <div
                                     class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3"
                                 >
@@ -710,6 +1216,15 @@
                                         >
                                     </label>
                                 </div>
+                                <input
+                                    v-model="form.other_features"
+                                    type="text"
+                                    placeholder="Other features (please specify)"
+                                    :class="
+                                        inputClass(errors.other_features) +
+                                        ' mt-3'
+                                    "
+                                />
                             </FormField>
                         </div>
                     </div>
@@ -807,7 +1322,9 @@
                                 {{ errors.declaration_agreed }}
                             </p>
 
-                            <div class="mt-10 border-t border-slate-100 pt-8">
+                            <div
+                                class="mt-10 grid grid-cols-1 gap-6 border-t border-slate-100 pt-8 md:grid-cols-2"
+                            >
                                 <FormField
                                     label="Electronic Signature (Type Full Name)"
                                     required
@@ -821,6 +1338,30 @@
                                         @blur="validateField('applicant_name')"
                                     />
                                 </FormField>
+                                <FormField
+                                    label="Date"
+                                    :error="errors.applicant_date"
+                                >
+                                    <input
+                                        v-model="form.applicant_date"
+                                        type="date"
+                                        :max="today"
+                                        :class="
+                                            inputClass(errors.applicant_date)
+                                        "
+                                    />
+                                </FormField>
+                                <div class="md:col-span-2">
+                                    <SignatureUpload
+                                        v-model="form.applicant_signature"
+                                        label="Scanned Signature"
+                                        required
+                                        :error="errors.applicant_signature"
+                                        @update:model-value="
+                                            validateField('applicant_signature')
+                                        "
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -935,31 +1476,70 @@
 import { computed, reactive, ref } from 'vue';
 import axios from 'axios';
 import FormField from '../../components/FormField.vue';
+import SignatureUpload from '../../components/SignatureUpload.vue';
 
 // ── Form State ─────────────────────────────────────────────────────────────
 const emptyForm = () => ({
+    // Applicant Details
     full_name_en: '',
     full_name_np: '',
     citizenship_no: '',
     date_of_birth: '',
+    father_name: '',
+    grandfather_name: '',
     permanent_address: '',
     current_address: '',
     mobile_no: '',
+    telephone_no: '',
     email: '',
+    occupation: '',
+    // Property Owner
     ownership_role: '',
+    // Property Details
     property_type: '',
+    property_type_other: '',
     province: '',
     district: '',
     municipality: '',
     ward_no: '',
     tole: '',
     gps_location: '',
+    kitta_no: '',
+    area: '',
+    map_sheet_no: '',
+    ownership_type: '',
+    road_access: '',
+    road_width: '',
+    facing_direction: '',
+    year_of_construction: null as number | null,
+    no_of_floors: null as number | null,
+    covered_area: '',
+    structure_type: '',
+    roof_type: '',
+    parking: '',
+    water_supply: '',
+    electricity: '',
+    internet: '',
+    drainage: '',
+    // Purpose of Listing
     purpose_of_listing: '',
+    purpose_other: '',
+    // Expected Price
     expected_selling_price: null as number | null,
+    negotiable: '',
+    minimum_acceptable_price: null as number | null,
     rental_amount: null as number | null,
+    // Documents
+    submitted_documents: [] as string[],
+    other_documents: '',
+    // Features
     property_features: [] as string[],
+    other_features: '',
+    // Declaration & Signature
     declaration_agreed: false,
     applicant_name: '',
+    applicant_date: new Date().toISOString().split('T')[0],
+    applicant_signature: null as File | null,
 });
 
 const form = reactive(emptyForm());
@@ -976,14 +1556,15 @@ const steps = [
         fields: [
             'ownership_role',
             'property_type',
+            'property_type_other',
             'province',
             'district',
             'municipality',
             'ward_no',
         ],
     },
-    { title: 'Details', fields: ['purpose_of_listing'] },
-    { title: 'Review', fields: ['declaration_agreed', 'applicant_name'] },
+    { title: 'Details', fields: ['purpose_of_listing', 'purpose_other'] },
+    { title: 'Review', fields: ['declaration_agreed', 'applicant_name', 'applicant_signature'] },
 ];
 
 const currentStep = ref(0);
@@ -1010,10 +1591,14 @@ const ownershipRoles = [
 ];
 
 const propertyTypes = [
-    { value: 'land', label: 'Plot / Land' },
-    { value: 'house', label: 'House / Villa' },
+    { value: 'land', label: 'Land' },
+    { value: 'house', label: 'House' },
     { value: 'apartment', label: 'Apartment' },
-    { value: 'commercial_building', label: 'Commercial' },
+    { value: 'commercial_building', label: 'Commercial Building' },
+    { value: 'office_space', label: 'Office Space' },
+    { value: 'industrial_property', label: 'Industrial Property' },
+    { value: 'agricultural_land', label: 'Agricultural Land' },
+    { value: 'other', label: 'Other' },
 ];
 
 const listingPurposes = [
@@ -1021,14 +1606,42 @@ const listingPurposes = [
     { value: 'rent', label: 'Rent', icon: '🏠' },
     { value: 'lease', label: 'Lease', icon: '📋' },
     { value: 'exchange', label: 'Exchange', icon: '🔄' },
+    { value: 'investment', label: 'Investment', icon: '📈' },
+    { value: 'other', label: 'Other', icon: '➕' },
 ];
 
 const featureTypes = [
     { value: 'corner_plot', label: 'Corner Plot' },
-    { value: 'blacktopped_road', label: 'Paved Road' },
+    { value: 'blacktopped_road', label: 'Blacktopped Road' },
     { value: 'drinking_water', label: 'Drinking Water' },
     { value: 'electricity', label: 'Electricity' },
-    { value: 'sewer', label: 'Sewerage' },
+    { value: 'sewer', label: 'Sewer' },
+    { value: 'internet', label: 'Internet' },
+    { value: 'school_nearby', label: 'School Nearby' },
+    { value: 'hospital_nearby', label: 'Hospital Nearby' },
+    { value: 'market_nearby', label: 'Market Nearby' },
+    { value: 'public_transport', label: 'Public Transport' },
+    { value: 'bank_nearby', label: 'Bank Nearby' },
+    { value: 'temple', label: 'Temple' },
+    { value: 'park', label: 'Park' },
+];
+
+const documentTypes = [
+    { value: 'citizenship_copy', label: 'Citizenship Copy' },
+    {
+        value: 'land_ownership_certificate',
+        label: 'Land Ownership Certificate (Lalpurja)',
+    },
+    { value: 'tax_clearance', label: 'Tax Clearance' },
+    { value: 'blueprint', label: 'Blueprint' },
+    {
+        value: 'building_completion_certificate',
+        label: 'Building Completion Certificate',
+    },
+    { value: 'valuation_report', label: 'Valuation Report' },
+    { value: 'power_of_attorney', label: 'Power of Attorney' },
+    { value: 'utility_bills', label: 'Utility Bills' },
+    { value: 'photographs', label: 'Photographs' },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -1049,13 +1662,29 @@ const rules: Record<string, (v: any) => string | true> = {
             : true,
     ownership_role: (v) => (!v ? 'Please select your role' : true),
     property_type: (v) => (!v ? 'Please select property type' : true),
+    property_type_other: (v) =>
+        form.property_type === 'other' && !v
+            ? 'Please specify the property type'
+            : true,
     province: (v) => (!v ? 'Province is required' : true),
     district: (v) => (!v ? 'District is required' : true),
     municipality: (v) => (!v ? 'Municipality is required' : true),
     ward_no: (v) => (!v ? 'Ward No is required' : true),
     purpose_of_listing: (v) => (!v ? 'Please select listing purpose' : true),
+    purpose_other: (v) =>
+        form.purpose_of_listing === 'other' && !v
+            ? 'Please specify the purpose'
+            : true,
     declaration_agreed: (v) => (!v ? 'You must agree to the terms' : true),
-    applicant_name: (v) => (!v ? 'Signature is required' : true),
+    applicant_name: (v) => (!v ? 'Signature name is required' : true),
+    applicant_signature: (v) => {
+        if (!(v instanceof File))
+            return 'Please upload a scanned signature image';
+        if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(v.type))
+            return 'Signature must be JPG, PNG or WEBP';
+        if (v.size > 2 * 1024 * 1024) return 'Signature image must be under 2 MB';
+        return true;
+    },
 };
 
 function validateField(field: string) {
@@ -1120,7 +1749,8 @@ async function submitForm() {
         const csrfToken = (
             document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement
         )?.content;
-        const res = await axios.post('/property-listing', form, {
+        const fd = toFormData(form as unknown as Record<string, unknown>);
+        const res = await axios.post('/property-listing', fd, {
             headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
         });
 
@@ -1149,6 +1779,27 @@ function resetForm() {
     highestStepReached.value = 0;
     submitted.value = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toFormData(data: Record<string, unknown>): FormData {
+    const fd = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (value instanceof File) {
+            fd.append(key, value);
+            return;
+        }
+        if (Array.isArray(value)) {
+            value.forEach((item) => fd.append(`${key}[]`, String(item)));
+            return;
+        }
+        if (typeof value === 'boolean') {
+            fd.append(key, value ? '1' : '0');
+            return;
+        }
+        fd.append(key, String(value));
+    });
+    return fd;
 }
 </script>
 

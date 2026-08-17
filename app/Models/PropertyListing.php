@@ -30,6 +30,7 @@ class PropertyListing extends Model
         'listing_status',
         'remarks',
         'received_by_staff_id',
+        'applicant_signature_path',
     ];
 
     protected $casts = [

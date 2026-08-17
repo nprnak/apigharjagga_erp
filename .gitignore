@@ -28,3 +28,6 @@ yarn-error.log
 /.zed
 
 /database/seeders
+
+document.md
+documentation-clientrf.md
