@@ -1,17 +1,50 @@
 <?php
 
+use App\Http\Controllers\AdminApprovalController;
 use App\Http\Controllers\AgreementController;
 use App\Http\Controllers\ClientRegistrationController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KycController;
+use App\Http\Controllers\MarketplaceController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyListingController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ValuationRequestController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
+
+// Public marketplace pages
+Route::get('/properties', [MarketplaceController::class, 'index'])->name('properties.index');
 
 Route::get('/property-listing', [PropertyListingController::class, 'index'])->name('property.listing');
 Route::post('/property-listing', [PropertyListingController::class, 'store'])->name('property.listing.store');
 Route::get('/property-listing/{id}/pdf', [PropertyListingController::class, 'downloadPdf'])->name('property.listing.pdf');
+
+// Breeze auth (login / register / password reset)
+Route::get('/signin', fn () => redirect()->route('login'))->name('signin');
+Route::get('/signup', fn () => redirect()->route('register'))->name('signup');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/kyc', [KycController::class, 'store'])->name('kyc.store');
+    Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
+});
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/admin/approve', [AdminApprovalController::class, 'approve'])->name('admin.approve');
+    Route::post('/admin/reject', [AdminApprovalController::class, 'reject'])->name('admin.reject');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
 
 Route::get('/agreement', [AgreementController::class, 'index'])->name('agreement.form');
 Route::post('/agreement', [AgreementController::class, 'store'])->name('agreement.store');

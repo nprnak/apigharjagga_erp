@@ -1,5 +1,15 @@
 import type { Auth } from '@/types/auth';
 
+type RouteFn = typeof import('../route').route;
+
+declare global {
+    var route: RouteFn;
+
+    interface Window {
+        route: RouteFn;
+    }
+}
+
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
     interface ImportMetaEnv {
@@ -29,5 +39,6 @@ declare module 'vue' {
         $inertia: typeof Router;
         $page: Page;
         $headManager: ReturnType<typeof createHeadManager>;
+        route: RouteFn;
     }
 }
