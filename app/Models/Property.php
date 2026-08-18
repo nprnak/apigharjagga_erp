@@ -14,6 +14,7 @@ class Property extends Model
     protected $fillable = [
         'property_code',
         'owner_client_id',
+        'user_id',
         'ownership_role',
         'property_type',
         'address_id',
@@ -38,6 +39,7 @@ class Property extends Model
         'building_permit_no',
         'current_building_condition',
         'status',
+        'approval_status',
     ];
 
     protected $casts = [
@@ -48,6 +50,11 @@ class Property extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'owner_client_id', 'client_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function address(): BelongsTo
