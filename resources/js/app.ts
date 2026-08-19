@@ -8,10 +8,6 @@ createInertiaApp({
     progress: {
         color: '#4B5563',
     },
-<<<<<<< HEAD
-
-=======
->>>>>>> 138acd3573af2808cbd4f2365c1f37690e55616c
     async setup({ el, App, props, plugin }) {
         const app = createApp({
             render: () => h(App, props),
@@ -22,7 +18,3 @@ createInertiaApp({
         app.mount(el!);
     },
 });
-<<<<<<< HEAD
-
-=======
->>>>>>> 138acd3573af2808cbd4f2365c1f37690e55616c
