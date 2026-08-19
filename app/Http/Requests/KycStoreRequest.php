@@ -26,6 +26,7 @@ class KycStoreRequest extends FormRequest
         return [
             'id_type' => ['required', 'string', 'in:citizenship,national_id,passport,driving_license'],
             'id_document' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'selfie_photo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 }
