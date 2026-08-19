@@ -29,7 +29,7 @@
             </div>
 
             <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #475569; line-height: 1.5; max-width: 580px;">
-                Complete your Annex F Client KYC Registration to unlock listing capabilities and connect with buyers.
+                Complete your KYC Registration to unlock listing capabilities and connect with buyers.
             </p>
 
             <div style="margin-top: 0.75rem;">
