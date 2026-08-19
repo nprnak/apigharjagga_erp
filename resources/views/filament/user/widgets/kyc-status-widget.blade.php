@@ -49,7 +49,7 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div class="relative shrink-0">
                     @if($kyc?->selfie_photo_path)
-                        <img src="{{ asset('storage/'.$kyc->selfie_photo_path) }}" alt="{{ $user->name }}" class="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-blue-500/25 ring-4 {{ $meta['ring'] }}" />
+                        <img src="/storage/{{ ltrim($kyc->selfie_photo_path, '/') }}" alt="{{ $user->name }}" class="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-blue-500/25 ring-4 {{ $meta['ring'] }}" />
                     @else
                         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-base font-bold text-white shadow-lg shadow-blue-500/25 ring-4 {{ $meta['ring'] }}">
                             {{ strtoupper(substr($user->name, 0, 2)) }}

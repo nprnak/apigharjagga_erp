@@ -65,7 +65,7 @@ class MarketplaceController extends Controller
 
     public function landing(Request $request): InertiaResponse
     {
-        $featuredListings = $this->featuredQuery(limit: 6)->get();
+        $featuredListings = $this->featuredQuery(limit: 8)->get();
 
         return Inertia::render('Marketplace/MarketplaceLanding', [
             'featuredListings' => $this->transformListings($featuredListings),
@@ -75,7 +75,7 @@ class MarketplaceController extends Controller
     }
 
     /**
-     * Latest approved listings for the homepage carousel.
+     * Latest approved/active listings for the homepage carousel.
      */
     private function featuredQuery(int $limit)
     {
@@ -85,10 +85,18 @@ class MarketplaceController extends Controller
             ->with([
                 'property:property_id,property_code,property_type,area,covered_area,no_of_floors,status,address_id',
                 'property.address:address_id,municipality,district,province',
+                'property.photos',
             ])
-            ->whereHas('property', function ($q) {
-                $q->where('approval_status', 'approved');
+            ->where(function ($q) {
+                $q->where('listing_status', 'approved')
+                    ->orWhereNull('listing_status')
+                    ->orWhere('listing_status', 'listed');
             })
+            ->whereHas('property', function ($q) {
+                $q->whereIn('approval_status', ['approved', 'pending'])
+                    ->orWhereIn('status', ['listed', 'draft']);
+            })
+            ->orderByRaw("CASE WHEN listing_status = 'approved' THEN 0 ELSE 1 END")
             ->orderByDesc('listing_id')
             ->limit($limit);
     }
@@ -101,7 +109,6 @@ class MarketplaceController extends Controller
     {
         $rows = Property::query()
             ->join('addresses', 'properties.address_id', '=', 'addresses.address_id')
-            ->where('properties.approval_status', 'approved')
             ->whereNotNull('addresses.province')
             ->whereNotNull('addresses.municipality')
             ->where('addresses.province', '!=', '')
@@ -151,13 +158,20 @@ class MarketplaceController extends Controller
 
         $query = PropertyListing::query()
             ->with([
-                'property:property_id,property_code,property_type,area,address_id',
-                'property.address:address_id,municipality',
+                'property:property_id,property_code,property_type,area,covered_area,no_of_floors,status,address_id',
+                'property.address:address_id,municipality,district,province',
+                'property.photos',
             ])
-            ->where('listing_status', 'approved')
-            ->whereHas('property', function ($q) {
-                $q->where('approval_status', 'approved');
+            ->where(function ($q2) {
+                $q2->where('listing_status', 'approved')
+                    ->orWhereNull('listing_status')
+                    ->orWhere('listing_status', 'listed');
             })
+            ->whereHas('property', function ($q2) {
+                $q2->whereIn('approval_status', ['approved', 'pending'])
+                    ->orWhereIn('status', ['listed', 'draft']);
+            })
+            ->orderByRaw("CASE WHEN listing_status = 'approved' THEN 0 ELSE 1 END")
             ->orderByDesc('listing_id')
             ->limit($limit);
 
@@ -202,6 +216,8 @@ class MarketplaceController extends Controller
                     ?? null;
             }
 
+            $photoUrl = $property?->photos?->first()?->photo_url ?? null;
+
             return [
                 'listing_id' => $listing->listing_id,
                 'application_no' => $listing->application_no,
@@ -217,7 +233,7 @@ class MarketplaceController extends Controller
                 'municipality' => $address?->municipality,
                 'district' => $address?->district,
                 'province' => $address?->province,
-                'photo_url' => null,
+                'photo_url' => $photoUrl,
             ];
         })->values()->toArray();
     }

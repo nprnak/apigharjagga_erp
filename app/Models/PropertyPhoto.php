@@ -35,7 +35,11 @@ class PropertyPhoto extends Model
             return null;
         }
 
-        return asset('storage/' . $this->file_ref);
+        if (str_starts_with($this->file_ref, 'http://') || str_starts_with($this->file_ref, 'https://')) {
+            return $this->file_ref;
+        }
+
+        return '/storage/' . ltrim($this->file_ref, '/');
     }
 
     public function property(): BelongsTo

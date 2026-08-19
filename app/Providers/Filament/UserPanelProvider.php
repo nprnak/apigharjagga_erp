@@ -33,10 +33,10 @@ class UserPanelProvider extends PanelProvider
             ->login()
             ->brandName('API GharJagga')
             ->brandLogo(null)
-            ->darkMode(true)
+            ->darkMode(false)
             ->colors([
                 'primary' => Color::Blue,
-                'gray' => Color::Zinc,
+                'gray' => Color::Slate,
             ])
             ->viteTheme('resources/css/filament/user/theme.css')
             ->renderHook(
