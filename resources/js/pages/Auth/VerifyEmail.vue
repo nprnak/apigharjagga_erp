@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { route } from '@/route';
 
@@ -22,38 +21,49 @@ const verificationLinkSent = computed(
 
 <template>
     <GuestLayout>
-        <Head title="Email Verification" />
+        <Head title="Email Verification — API GharJagga MIS" />
 
-        <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-slate-900">Verify your email</h2>
+            <p class="mt-1.5 text-xs text-slate-500 leading-relaxed">
+                Thanks for signing up! Before getting started, please check your inbox and click the verification link we just emailed you.
+            </p>
         </div>
 
         <div
-            class="mb-4 text-sm font-medium text-green-600 dark:text-green-400"
             v-if="verificationLinkSent"
+            class="mb-6 rounded-xl bg-emerald-50 border border-emerald-200/80 p-3.5 text-xs text-emerald-800 flex items-center gap-2"
         >
-            A new verification link has been sent to the email address you
-            provided during registration.
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>A new verification link has been sent to your email address.</span>
         </div>
 
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
+        <form @submit.prevent="submit" class="space-y-4">
+            <div>
+                <button
+                    type="submit"
                     :disabled="form.processing"
+                    class="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed py-2.5 px-4 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 flex items-center justify-center gap-2"
                 >
-                    Resend Verification Email
-                </PrimaryButton>
+                    <svg v-if="form.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span>{{ form.processing ? 'Sending…' : 'Resend Verification Email' }}</span>
+                </button>
+            </div>
 
+            <div class="pt-4 text-center">
                 <Link
                     :href="route('logout')"
                     method="post"
                     as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                    >Log Out</Link
+                    class="text-xs text-slate-500 hover:text-slate-800 transition underline underline-offset-4"
                 >
+                    Log Out
+                </Link>
             </div>
         </form>
     </GuestLayout>
