@@ -154,10 +154,28 @@ class KycVerificationPage extends Page
                         TextInput::make('current_tole')->label('Tole / Locality / Landmark')->columnSpanFull(),
                     ]),
 
-                Section::make('4. Identity Verification Documents')
-                    ->description('Clear scanned copies or photographs of your government-issued ID')
+                Section::make('4. Passport-Size Photograph & Official Identity Document')
+                    ->description('Upload an official passport-size (PP) photo of the applicant along with clear government-issued ID documentation')
                     ->columns(2)
                     ->schema([
+                        FileUpload::make('selfie_photo_path')
+                            ->label('Passport-Size Photo of Applicant (PP Size Photograph)')
+                            ->disk('public')
+                            ->directory('kyc/selfies')
+                            ->image()
+                            ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                            ->imageEditor()
+                            ->imageEditorAspectRatios([
+                                null,
+                                '1:1',
+                                '35:45',
+                            ])
+                            ->maxSize(20480)
+                            ->required()
+                            ->openable()
+                            ->downloadable()
+                            ->helperText('Please upload a clear front-facing passport-size (PP) photo of the applicant against a plain or light background (Max: 20MB).')
+                            ->columnSpanFull(),
                         Select::make('id_type')
                             ->label('Government Document Type')
                             ->options([
@@ -168,20 +186,16 @@ class KycVerificationPage extends Page
                             ])
                             ->required(),
                         FileUpload::make('id_document_path')
-                            ->label('Identity Document Photo / Scan')
+                            ->label('Identity Document Photo / Scanned Copy')
                             ->disk('public')
                             ->directory('kyc/documents')
                             ->image()
-                            ->maxSize(4096)
-                            ->required(),
-                        FileUpload::make('selfie_photo_path')
-                            ->label('Recent Photograph / Clear Face Photo')
-                            ->disk('public')
-                            ->directory('kyc/selfies')
-                            ->image()
-                            ->maxSize(4096)
-                            ->columnSpanFull()
-                            ->helperText('Please upload a clear portrait photo showing your face in good lighting.'),
+                            ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                            ->maxSize(20480)
+                            ->required()
+                            ->openable()
+                            ->downloadable()
+                            ->helperText('Scanned copy or crisp photograph of both sides of your official identity card (Max: 20MB).'),
                     ]),
             ]);
     }

@@ -5,6 +5,7 @@ namespace App\Filament\User\Resources;
 use App\Filament\User\Resources\MyPropertyResource\Pages;
 use App\Models\Property;
 use Filament\Actions;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -45,6 +46,7 @@ class MyPropertyResource extends Resource
 
         return $query
             ->where('user_id', $userId)
+            ->with(['photos', 'address'])
             ->orderByDesc('property_id');
     }
 
@@ -197,6 +199,26 @@ class MyPropertyResource extends Resource
                         ->prefix('Rs.')
                         ->minValue(0),
                 ]),
+
+            Section::make('4. Property Photographs & Media')
+                ->description('Upload multiple pictures of the property (exterior, interior, road access, surroundings)')
+                ->schema([
+                    FileUpload::make('property_photos')
+                        ->label('Property Photographs (तस्विरहरू)')
+                        ->multiple()
+                        ->reorderable()
+                        ->image()
+                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                        ->maxFiles(12)
+                        ->maxSize(20480)
+                        ->disk('public')
+                        ->directory('properties/photos')
+                        ->openable()
+                        ->downloadable()
+                        ->imageEditor()
+                        ->helperText('Upload multiple photos of the property. Supports JPG, PNG, WebP (Max 20MB each, up to 12 pictures).')
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -204,6 +226,13 @@ class MyPropertyResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('photos.file_ref')
+                    ->label('Photo')
+                    ->disk('public')
+                    ->circular()
+                    ->stacked()
+                    ->limit(3),
+
                 Tables\Columns\TextColumn::make('property_code')
                     ->label('Property Code')
                     ->searchable()

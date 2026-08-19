@@ -16,6 +16,14 @@ type KycRecord = {
     mobile_no: string | null;
     admin_note: string | null;
     submitted_at: string | null;
+    selfie_photo_url?: string | null;
+    id_document_url?: string | null;
+};
+
+type PropertyPhotoItem = {
+    photo_id: number;
+    photo_url: string | null;
+    caption?: string | null;
 };
 
 type PropertyItem = {
@@ -25,6 +33,8 @@ type PropertyItem = {
     area: string | null;
     municipality: string | null;
     approval_status: 'pending' | 'approved' | 'rejected';
+    photos?: PropertyPhotoItem[];
+    primary_photo_url?: string | null;
 };
 
 const props = withDefaults(
@@ -47,16 +57,16 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
     {
         id: 'overview',
         label: 'Overview',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" /><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" /></svg>`,
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" /><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.432z" /></svg>`,
     },
     {
         id: 'kyc',
         label: 'KYC Verification',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg>`,
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg>`,
     },
     {
         id: 'listings',
-        label: 'My Listings',
+        label: 'My Properties',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M19.006 3.705a.75.75 0 00-.512-1.41L6 6.838V3a.75.75 0 00-1.5 0v4.93l-1.006.365a.75.75 0 00.512 1.41l15-5.47zM3.019 9.386a.75.75 0 00-.507 1.408l.75.27A2.25 2.25 0 005.25 13.5v6.75a.75.75 0 001.5 0V13.5a.75.75 0 00-.75-.75H5.25a.75.75 0 01-.712-.51l-.519-.854zM10.5 6.75a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3zm-3 3a.75.75 0 000 1.5h9a.75.75 0 000-1.5h-9zm1.5 3a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-6z" /></svg>`,
     },
 ];
@@ -117,7 +127,10 @@ const listingForm = useForm({
     purpose_of_listing: 'sale',
     expected_selling_price: '',
     rental_amount: '',
+    photos: [] as File[],
 });
+
+const photoPreviews = ref<string[]>([]);
 
 const canCreateListing = computed(() => props.kycStatus === 'approved');
 const totalListings = computed(
@@ -175,6 +188,24 @@ function onSelfieChange(event: Event) {
     form.selfie_photo = input.files?.[0] ?? null;
 }
 
+function onPropertyPhotosChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const newFiles = Array.from(input.files);
+    listingForm.photos = [...listingForm.photos, ...newFiles].slice(0, 12);
+
+    photoPreviews.value = [];
+    listingForm.photos.forEach((file) => {
+        photoPreviews.value.push(URL.createObjectURL(file));
+    });
+}
+
+function removePropertyPhoto(index: number) {
+    listingForm.photos.splice(index, 1);
+    photoPreviews.value.splice(index, 1);
+}
+
 function listingBadgeClass(status: PropertyItem['approval_status']) {
     if (status === 'approved') return 'text-emerald-400 bg-emerald-400/10 ring-1 ring-emerald-400/20';
     if (status === 'pending') return 'text-amber-400 bg-amber-400/10 ring-1 ring-amber-400/20';
@@ -192,7 +223,7 @@ function submitKyc() {
 
 function submitListing() {
     if (!canCreateListing.value) return;
-    listingForm.post(route('properties.store'), { preserveScroll: true });
+    listingForm.post(route('properties.store'), { forceFormData: true, preserveScroll: true });
 }
 </script>
 
@@ -551,15 +582,16 @@ function submitListing() {
                                                 <InputError class="mt-1.5" :message="form.errors.id_document" />
                                             </div>
                                             <div>
-                                                <label class="block text-sm font-semibold text-slate-300 mb-1.5">Selfie Photo</label>
+                                                <label class="block text-sm font-semibold text-slate-300 mb-1.5">Passport-Size Photo (PP Photo) <span class="text-red-400">*</span></label>
                                                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition-all">
-                                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                    <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-2">
                                                         <svg class="w-8 h-8 mb-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                        <p class="text-xs text-slate-400">{{ form.selfie_photo?.name ?? 'Click to upload selfie' }}</p>
-                                                        <p class="text-xs text-slate-500 mt-1">Optional — face visible, clear background</p>
+                                                        <p class="text-xs font-medium text-slate-300">{{ form.selfie_photo?.name ?? 'Click to upload passport photo (PP size)' }}</p>
+                                                        <p class="text-[11px] text-slate-500 mt-1">Clear front-facing face photo (JPEG/PNG/WebP, max 4MB)</p>
                                                     </div>
-                                                    <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onSelfieChange" />
+                                                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden" @change="onSelfieChange" />
                                                 </label>
+                                                <InputError class="mt-1.5" :message="form.errors.selfie_photo" />
                                             </div>
                                         </div>
                                     </div>
@@ -601,8 +633,11 @@ function submitListing() {
                                         class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 hover:bg-white/5 transition-all"
                                     >
                                         <div class="flex items-center gap-4">
-                                            <div class="rounded-xl bg-indigo-600/20 p-2.5">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" /></svg>
+                                            <div v-if="item.primary_photo_url" class="h-12 w-12 rounded-xl overflow-hidden shrink-0 border border-white/10 shadow-sm">
+                                                <img :src="item.primary_photo_url" :alt="item.property_code" class="h-full w-full object-cover" />
+                                            </div>
+                                            <div v-else class="rounded-xl bg-indigo-600/20 p-2.5 shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                                             </div>
                                             <div>
                                                 <p class="text-white font-semibold text-sm">{{ item.property_code }}</p>
@@ -610,6 +645,7 @@ function submitListing() {
                                                     {{ typeLabel(item.property_type) }}
                                                     <span v-if="item.municipality"> · {{ item.municipality }}</span>
                                                     <span v-if="item.area"> · {{ item.area }}</span>
+                                                    <span v-if="item.photos && item.photos.length > 0" class="text-blue-400 font-medium"> · {{ item.photos.length }} photo{{ item.photos.length > 1 ? 's' : '' }}</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -638,17 +674,17 @@ function submitListing() {
                                     </div>
                                 </div>
 
-                                <form v-else class="px-6 py-6 grid grid-cols-1 gap-4 sm:grid-cols-2" @submit.prevent="submitListing">
+                                <form v-else @submit.prevent="submitListing" class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
                                         <label class="block text-sm font-semibold text-slate-300 mb-1.5">Property Type <span class="text-red-400">*</span></label>
                                         <select v-model="listingForm.property_type" required class="w-full rounded-xl bg-slate-800 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition">
-                                            <option value="" disabled>Select type</option>
+                                            <option value="" disabled>Select property category</option>
                                             <option v-for="t in propertyTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                                         </select>
                                         <InputError class="mt-1.5" :message="listingForm.errors.property_type" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Purpose <span class="text-red-400">*</span></label>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Listing Purpose</label>
                                         <select v-model="listingForm.purpose_of_listing" class="w-full rounded-xl bg-slate-800 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition">
                                             <option v-for="p in purposes" :key="p.value" :value="p.value">{{ p.label }}</option>
                                         </select>
@@ -656,8 +692,8 @@ function submitListing() {
                                     <div>
                                         <label class="block text-sm font-semibold text-slate-300 mb-1.5">Ownership Role</label>
                                         <select v-model="listingForm.ownership_role" class="w-full rounded-xl bg-slate-800 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition">
-                                            <option value="">Select role</option>
-                                            <option v-for="r in ownershipRoles" :key="r.value" :value="r.value">{{ r.label }}</option>
+                                            <option value="">Select ownership</option>
+                                            <option v-for="o in ownershipRoles" :key="o.value" :value="o.value">{{ o.label }}</option>
                                         </select>
                                     </div>
                                     <div>
@@ -665,11 +701,11 @@ function submitListing() {
                                         <input v-model="listingForm.kitta_no" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Land Area</label>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Area</label>
                                         <input v-model="listingForm.area" placeholder="e.g. 4 aana" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Covered Area (sq.ft)</label>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Covered Area</label>
                                         <input v-model="listingForm.covered_area" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
                                     <div>
@@ -677,13 +713,19 @@ function submitListing() {
                                         <input v-model="listingForm.no_of_floors" type="number" min="0" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Year Built</label>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Year of Construction</label>
                                         <input v-model="listingForm.year_of_construction" type="number" min="1800" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
-
-                                    <!-- Location -->
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Facing Direction</label>
+                                        <input v-model="listingForm.facing_direction" placeholder="e.g. East" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-300 mb-1.5">Structure Type</label>
+                                        <input v-model="listingForm.structure_type" placeholder="e.g. RCC Frame" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
+                                    </div>
                                     <div class="sm:col-span-2">
-                                        <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest my-2 flex items-center gap-2">
                                             <span class="h-px flex-1 bg-blue-400/20"></span>
                                             Property Location
                                             <span class="h-px flex-1 bg-blue-400/20"></span>
@@ -717,7 +759,50 @@ function submitListing() {
                                         <label class="block text-sm font-semibold text-slate-300 mb-1.5">Rent Amount (Rs.)</label>
                                         <input v-model="listingForm.rental_amount" type="number" min="0" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition" />
                                     </div>
-                                    <div class="sm:col-span-2 flex items-center gap-4">
+
+                                    <!-- Property Photographs Section -->
+                                    <div class="sm:col-span-2">
+                                        <h4 class="text-blue-400 text-xs font-bold uppercase tracking-widest my-2 flex items-center gap-2">
+                                            <span class="h-px flex-1 bg-blue-400/20"></span>
+                                            Property Photographs (तस्विरहरू)
+                                            <span class="h-px flex-1 bg-blue-400/20"></span>
+                                        </h4>
+                                        
+                                        <label class="flex flex-col items-center justify-center w-full min-h-[120px] border-2 border-dashed border-white/20 rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition-all p-4">
+                                            <div class="flex flex-col items-center justify-center text-center">
+                                                <svg class="w-8 h-8 mb-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p class="text-xs font-medium text-slate-300">Click to upload multiple property photos</p>
+                                                <p class="text-[11px] text-slate-500 mt-1">JPEG, PNG, WebP (Max 20MB per image, up to 12 pictures)</p>
+                                            </div>
+                                            <input type="file" multiple accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden" @change="onPropertyPhotosChange" />
+                                        </label>
+
+                                        <!-- Thumbnail Grid Preview -->
+                                        <div v-if="photoPreviews.length > 0" class="mt-4">
+                                            <p class="text-xs text-slate-400 mb-2 font-medium">{{ photoPreviews.length }} photo{{ photoPreviews.length > 1 ? 's' : '' }} selected (First photo will be cover):</p>
+                                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                                <div v-for="(preview, index) in photoPreviews" :key="index" class="relative group aspect-square rounded-xl overflow-hidden border border-white/10 bg-black/40">
+                                                    <img :src="preview" alt="Property thumbnail" class="w-full h-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        @click="removePropertyPhoto(index)"
+                                                        class="absolute top-1 right-1 h-6 w-6 rounded-full bg-rose-600/90 text-white flex items-center justify-center opacity-90 group-hover:opacity-100 shadow transition-opacity"
+                                                        title="Remove photo"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                    <span v-if="index === 0" class="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-amber-300">
+                                                        Cover
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <InputError class="mt-1.5" :message="listingForm.errors.photos" />
+                                    </div>
+
+                                    <div class="sm:col-span-2 flex items-center gap-4 pt-2">
                                         <button
                                             type="submit"
                                             :disabled="listingForm.processing"

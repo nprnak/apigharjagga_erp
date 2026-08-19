@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PropertyResource\Pages;
 use App\Models\Property;
 use Filament\Actions;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -74,6 +75,21 @@ class PropertyResource extends Resource
                     TextInput::make('year_of_construction')->label('Year Built')->numeric(),
                     TextInput::make('facing_direction')->label('Facing Direction'),
                 ]),
+
+            Section::make('Property Photographs & Media')
+                ->description('Attached property photographs')
+                ->schema([
+                    FileUpload::make('property_photos')
+                        ->label('Photographs')
+                        ->multiple()
+                        ->reorderable()
+                        ->image()
+                        ->disk('public')
+                        ->directory('properties/photos')
+                        ->openable()
+                        ->downloadable()
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -81,6 +97,12 @@ class PropertyResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('photos.file_ref')
+                    ->label('Photo')
+                    ->disk('public')
+                    ->circular()
+                    ->stacked()
+                    ->limit(3),
                 Tables\Columns\TextColumn::make('property_code')
                     ->label('Code')
                     ->searchable()

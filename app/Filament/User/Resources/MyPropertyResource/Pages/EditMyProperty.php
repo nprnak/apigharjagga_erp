@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources\MyPropertyResource\Pages;
 
 use App\Filament\User\Resources\MyPropertyResource;
+use App\Models\PropertyPhoto;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -35,6 +36,8 @@ class EditMyProperty extends EditRecord
             $data['rental_amount'] = $listing->rental_amount;
         }
 
+        $data['property_photos'] = $property->photos()->pluck('file_ref')->toArray();
+
         return $data;
     }
 
@@ -61,7 +64,43 @@ class EditMyProperty extends EditRecord
             ]);
         }
 
+        unset($data['property_photos']);
+
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        $property = $this->record;
+        $formData = $this->form->getRawState();
+
+        if (isset($formData['property_photos'])) {
+            $photos = is_array($formData['property_photos']) ? array_filter($formData['property_photos']) : [];
+            
+            $existingPhotos = $property->photos()->get();
+            $existingRefs = $existingPhotos->pluck('file_ref')->toArray();
+
+            // Delete removed photos
+            foreach ($existingPhotos as $existing) {
+                if (! in_array($existing->file_ref, $photos, true)) {
+                    $existing->delete();
+                }
+            }
+
+            // Insert newly added photos
+            foreach ($photos as $index => $photoPath) {
+                if (! in_array($photoPath, $existingRefs, true)) {
+                    PropertyPhoto::create([
+                        'property_id' => $property->property_id,
+                        'source_type' => 'listing',
+                        'source_id' => $property->listings()->latest()->first()?->listing_id,
+                        'photo_type' => $index === 0 ? 'front' : 'other',
+                        'file_ref' => $photoPath,
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
+        }
     }
 
     protected function getRedirectUrl(): string

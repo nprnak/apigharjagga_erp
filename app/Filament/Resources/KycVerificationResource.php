@@ -7,6 +7,7 @@ use App\Models\KycVerification;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -85,9 +86,25 @@ class KycVerificationResource extends Resource
                     TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
                 ]),
 
-            Section::make('Document & Status')
+            Section::make('Passport-Size Photo & ID Documents')
                 ->columns(2)
                 ->schema([
+                    FileUpload::make('selfie_photo_path')
+                        ->label('Passport-Size Photo (PP Photo)')
+                        ->image()
+                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                        ->maxSize(20480)
+                        ->disk('public')
+                        ->openable()
+                        ->downloadable(),
+                    FileUpload::make('id_document_path')
+                        ->label('Identity Document (Citizenship/NID/Passport)')
+                        ->image()
+                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                        ->maxSize(20480)
+                        ->disk('public')
+                        ->openable()
+                        ->downloadable(),
                     Select::make('id_type')
                         ->label('ID Type')
                         ->options([
@@ -113,6 +130,10 @@ class KycVerificationResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('selfie_photo_path')
+                    ->label('PP Photo')
+                    ->disk('public')
+                    ->circular(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('User')
                     ->searchable()

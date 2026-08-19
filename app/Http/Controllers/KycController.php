@@ -12,10 +12,10 @@ class KycController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            // Identity document
+            // Identity document & passport-size photo
             'id_type'       => ['required', Rule::in(['citizenship', 'national_id', 'passport', 'driving_license'])],
-            'id_document'   => ['required', 'file', 'mimes:jpeg,png,webp', 'max:4096'],
-            'selfie_photo'  => ['nullable', 'file', 'mimes:jpeg,png,webp', 'max:4096'],
+            'id_document'   => ['required', 'file', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'selfie_photo'  => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
 
             // Personal details (Annex F)
             'full_name'          => ['required', 'string', 'max:150'],
@@ -48,12 +48,12 @@ class KycController extends Controller
         $existing = $user->kycVerification;
 
         // Store the ID document
-        $docPath = $request->file('id_document')->store('kyc/documents', 'local');
+        $docPath = $request->file('id_document')->store('kyc/documents', 'public');
 
-        // Optionally store selfie
-        $selfiePath = null;
+        // Store passport size photograph
+        $selfiePath = $existing?->selfie_photo_path;
         if ($request->hasFile('selfie_photo')) {
-            $selfiePath = $request->file('selfie_photo')->store('kyc/selfies', 'local');
+            $selfiePath = $request->file('selfie_photo')->store('kyc/selfies', 'public');
         }
 
         $payload = [
@@ -87,12 +87,12 @@ class KycController extends Controller
         ];
 
         if ($existing) {
-            // Delete old files
-            if ($existing->id_document_path) {
-                Storage::disk('local')->delete($existing->id_document_path);
+            // Delete old files if new ones are uploaded
+            if ($existing->id_document_path && $existing->id_document_path !== $docPath) {
+                Storage::disk('public')->delete($existing->id_document_path);
             }
-            if ($existing->selfie_photo_path) {
-                Storage::disk('local')->delete($existing->selfie_photo_path);
+            if ($existing->selfie_photo_path && $request->hasFile('selfie_photo') && $existing->selfie_photo_path !== $selfiePath) {
+                Storage::disk('public')->delete($existing->selfie_photo_path);
             }
             $existing->update($payload);
         } else {

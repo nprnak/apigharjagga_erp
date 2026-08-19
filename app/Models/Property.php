@@ -76,4 +76,9 @@ class Property extends Model
     {
         return $this->hasMany(Agreement::class, 'property_id', 'property_id');
     }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(PropertyPhoto::class, 'property_id', 'property_id');
+    }
 }

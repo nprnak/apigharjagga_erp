@@ -6,6 +6,7 @@ use App\Filament\User\Resources\MyPropertyResource;
 use App\Models\Address;
 use App\Models\Client;
 use App\Models\PropertyListing;
+use App\Models\PropertyPhoto;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
@@ -60,6 +61,8 @@ class CreateMyProperty extends CreateRecord
             ],
         );
 
+        unset($data['property_photos']);
+
         $data['user_id'] = $user->id;
         $data['owner_client_id'] = $client->client_id;
         $data['address_id'] = $address->address_id;
@@ -77,15 +80,34 @@ class CreateMyProperty extends CreateRecord
 
         $sequence = PropertyListing::query()->count() + 1;
 
-        PropertyListing::create([
+        $hasPhotos = ! empty($formData['property_photos']);
+
+        $listing = PropertyListing::create([
             'application_no' => 'AGJ-'.date('Ymd').'-'.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT),
             'property_id' => $property->property_id,
             'applicant_client_id' => $property->owner_client_id,
             'purpose_of_listing' => $formData['purpose_of_listing'] ?? 'sale',
             'expected_selling_price' => $formData['expected_selling_price'] ?? null,
             'rental_amount' => $formData['rental_amount'] ?? null,
+            'photographs_received' => $hasPhotos,
             'listing_status' => 'approved',
         ]);
+
+        if ($hasPhotos) {
+            $photos = is_array($formData['property_photos']) ? $formData['property_photos'] : [$formData['property_photos']];
+            foreach ($photos as $index => $photoPath) {
+                if ($photoPath) {
+                    PropertyPhoto::create([
+                        'property_id' => $property->property_id,
+                        'source_type' => 'listing',
+                        'source_id' => $listing->listing_id,
+                        'photo_type' => $index === 0 ? 'front' : 'other',
+                        'file_ref' => $photoPath,
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
+        }
 
         Notification::make()
             ->title('Property Listed Successfully')
