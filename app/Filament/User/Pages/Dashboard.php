@@ -13,25 +13,17 @@ class Dashboard extends BaseDashboard
 {
     protected static ?string $navigationLabel = 'Dashboard';
 
-    protected static ?string $title = 'User Overview';
+    protected static ?string $title = 'Dashboard';
+
+    protected string $view = 'filament.user.pages.dashboard';
+
+    public function getHeading(): string
+    {
+        return '';
+    }
 
     public function getWidgets(): array
     {
-        return [
-            KycStatusWidget::class,
-            UserStatsWidget::class,
-            ListingsStatusChart::class,
-            QuickActionsWidget::class,
-            RecentListingsWidget::class,
-        ];
-    }
-
-    public function getColumns(): int|array
-    {
-        return [
-            'default' => 1,
-            'md' => 2,
-            'xl' => 3,
-        ];
+        return [];
     }
 }
