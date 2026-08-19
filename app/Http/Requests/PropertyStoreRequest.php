@@ -57,6 +57,8 @@ class PropertyStoreRequest extends FormRequest
             'purpose_of_listing' => ['required', 'in:sale,rent,lease,exchange,investment,other'],
             'expected_selling_price' => ['nullable', 'numeric', 'min:0'],
             'rental_amount' => ['nullable', 'numeric', 'min:0'],
+            'photos' => ['nullable', 'array', 'max:12'],
+            'photos.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:20480'],
         ];
     }
 }

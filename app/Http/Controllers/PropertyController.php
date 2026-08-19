@@ -6,6 +6,7 @@ use App\Http\Requests\PropertyStoreRequest;
 use App\Models\Address;
 use App\Models\Client;
 use App\Models\PropertyListing;
+use App\Models\PropertyPhoto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,8 +26,9 @@ class PropertyController extends Controller
         }
 
         $data = $request->validated();
+        $uploadedPhotos = $request->file('photos') ?? [];
 
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($user, $data, $uploadedPhotos) {
             $address = Address::create([
                 'province' => $data['province'] ?? null,
                 'district' => $data['district'] ?? null,
@@ -70,16 +72,32 @@ class PropertyController extends Controller
             ]);
 
             $sequence = PropertyListing::query()->count() + 1;
+            $hasPhotos = count($uploadedPhotos) > 0;
 
-            PropertyListing::query()->create([
+            $listing = PropertyListing::query()->create([
                 'application_no' => 'AGJ-' . date('Ymd') . '-' . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT),
                 'property_id' => $property->property_id,
                 'applicant_client_id' => $client->client_id,
                 'purpose_of_listing' => $data['purpose_of_listing'],
                 'expected_selling_price' => $data['expected_selling_price'] ?? null,
                 'rental_amount' => $data['rental_amount'] ?? null,
+                'photographs_received' => $hasPhotos,
                 'listing_status' => 'approved',
             ]);
+
+            foreach ($uploadedPhotos as $index => $photoFile) {
+                if ($photoFile && $photoFile->isValid()) {
+                    $path = $photoFile->store('properties/photos', 'public');
+                    PropertyPhoto::create([
+                        'property_id' => $property->property_id,
+                        'source_type' => 'listing',
+                        'source_id' => $listing->listing_id,
+                        'photo_type' => $index === 0 ? 'front' : 'other',
+                        'file_ref' => $path,
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
         });
 
         return redirect()->route('dashboard', ['tab' => 'listings']);

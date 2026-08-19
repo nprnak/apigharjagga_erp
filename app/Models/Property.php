@@ -67,8 +67,18 @@ class Property extends Model
         return $this->hasOne(PropertyListing::class, 'property_id', 'property_id');
     }
 
+    public function listings(): HasMany
+    {
+        return $this->hasMany(PropertyListing::class, 'property_id', 'property_id');
+    }
+
     public function agreements(): HasMany
     {
         return $this->hasMany(Agreement::class, 'property_id', 'property_id');
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(PropertyPhoto::class, 'property_id', 'property_id');
     }
 }

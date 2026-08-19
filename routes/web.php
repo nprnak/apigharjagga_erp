@@ -4,15 +4,14 @@ use App\Http\Controllers\AdminApprovalController;
 use App\Http\Controllers\AgreementController;
 use App\Http\Controllers\ClientRegistrationController;
 use App\Http\Controllers\ComplaintController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyListingController;
 use App\Http\Controllers\ValuationRequestController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
 
@@ -28,10 +27,21 @@ Route::get('/signin', fn () => redirect()->route('login'))->name('signin');
 Route::get('/signup', fn () => redirect()->route('register'))->name('signup');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/kyc', [KycController::class, 'store'])->name('kyc.store');
     Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
 });
+
+// Named route used by Breeze auth redirects and KYC/property controllers.
+// Maps legacy ?tab= query params to the Filament user panel pages.
+Route::middleware('auth')->get('/user/dashboard', function (Request $request) {
+    $target = match ($request->query('tab')) {
+        'kyc' => '/dashboard/kyc-verification-page',
+        'listings' => '/dashboard/my-properties',
+        default => '/dashboard',
+    };
+
+    return redirect($target);
+})->name('dashboard');
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/approve', [AdminApprovalController::class, 'approve'])->name('admin.approve');
