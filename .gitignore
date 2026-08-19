@@ -27,7 +27,6 @@ yarn-error.log
 /.vscode
 /.zed
 
-/database/seeders
 
 document.md
 documentation-clientrf.md
