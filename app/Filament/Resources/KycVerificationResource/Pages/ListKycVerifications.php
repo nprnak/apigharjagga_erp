@@ -23,9 +23,9 @@ class ListKycVerifications extends ListRecords
     {
         return [
             'all'      => Tab::make('All'),
-            'pending'  => Tab::make('Pending')->modifyQueryUsing(fn (Builder $q) => $q->where('status', 'pending'))->badge(fn () => \App\Models\KycVerification::where('status', 'pending')->count()),
-            'approved' => Tab::make('Approved')->modifyQueryUsing(fn (Builder $q) => $q->where('status', 'approved')),
-            'rejected' => Tab::make('Rejected')->modifyQueryUsing(fn (Builder $q) => $q->where('status', 'rejected')),
+            'pending'  => Tab::make('Pending')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending'))->badge(fn () => \App\Models\KycVerification::where('status', 'pending')->count()),
+            'approved' => Tab::make('Approved')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'approved')),
+            'rejected' => Tab::make('Rejected')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'rejected')),
         ];
     }
 }

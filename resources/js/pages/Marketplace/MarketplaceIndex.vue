@@ -12,6 +12,7 @@ type Listing = {
     property_type: string | null;
     area: string | null;
     municipality: string | null;
+    photo_url?: string | null;
 };
 
 type CityOption = {
@@ -194,19 +195,22 @@ function search() {
                         <article
                             v-for="item in listings"
                             :key="item.listing_id"
-                            class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+                            class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
                         >
-                            <div class="relative h-28 bg-linear-to-br from-emerald-500/15 to-slate-900/5">
-                                <div
-                                    class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"
-                                ></div>
-                                <div class="relative flex h-full items-center justify-between px-4">
+                            <div class="relative h-40 bg-slate-100 overflow-hidden">
+                                <img
+                                    :src="item.photo_url || `https://picsum.photos/seed/property-${item.property_code || item.listing_id}/480/320`"
+                                    :alt="item.property_code ?? 'Property'"
+                                    class="h-full w-full object-cover"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                <div class="absolute inset-x-0 bottom-3 flex items-center justify-between px-4">
                                     <span
-                                        class="rounded-full bg-emerald-600/10 px-3 py-1 text-xs font-bold text-emerald-800"
+                                        class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow"
                                     >
-                                        {{ item.purpose }}
+                                        {{ item.purpose ? (item.purpose.charAt(0).toUpperCase() + item.purpose.slice(1)) : 'For Sale' }}
                                     </span>
-                                    <span class="text-xs font-bold text-slate-500">AGJ Listing</span>
+                                    <span class="text-xs font-bold text-white drop-shadow">AGJ Listing</span>
                                 </div>
                             </div>
 

@@ -23,9 +23,9 @@ class ListProperties extends ListRecords
     {
         return [
             'all'      => Tab::make('All'),
-            'pending'  => Tab::make('Pending')->modifyQueryUsing(fn (Builder $q) => $q->where('approval_status', 'pending'))->badge(fn () => \App\Models\Property::where('approval_status', 'pending')->count()),
-            'approved' => Tab::make('Approved')->modifyQueryUsing(fn (Builder $q) => $q->where('approval_status', 'approved')),
-            'rejected' => Tab::make('Rejected')->modifyQueryUsing(fn (Builder $q) => $q->where('approval_status', 'rejected')),
+            'pending'  => Tab::make('Pending')->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'pending'))->badge(fn () => \App\Models\Property::where('approval_status', 'pending')->count()),
+            'approved' => Tab::make('Approved')->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'approved')),
+            'rejected' => Tab::make('Rejected')->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'rejected')),
         ];
     }
 }
