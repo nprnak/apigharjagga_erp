@@ -14,6 +14,7 @@ class Property extends Model
     protected $fillable = [
         'property_code',
         'owner_client_id',
+        'user_id',
         'ownership_role',
         'property_type',
         'address_id',
@@ -38,6 +39,7 @@ class Property extends Model
         'building_permit_no',
         'current_building_condition',
         'status',
+        'approval_status',
     ];
 
     protected $casts = [
@@ -50,6 +52,11 @@ class Property extends Model
         return $this->belongsTo(Client::class, 'owner_client_id', 'client_id');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function address(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'address_id', 'address_id');
@@ -60,8 +67,23 @@ class Property extends Model
         return $this->hasOne(PropertyListing::class, 'property_id', 'property_id');
     }
 
+    public function listings(): HasMany
+    {
+        return $this->hasMany(PropertyListing::class, 'property_id', 'property_id');
+    }
+
     public function agreements(): HasMany
     {
         return $this->hasMany(Agreement::class, 'property_id', 'property_id');
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(PropertyPhoto::class, 'property_id', 'property_id');
+    }
+
+    public function inquiries(): HasMany
+    {
+        return $this->hasMany(PropertyInquiry::class, 'property_id', 'property_id');
     }
 }
