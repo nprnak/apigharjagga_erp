@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import type { Listing } from '../../types/marketplace';
 import { computed } from 'vue';
 
@@ -65,8 +66,9 @@ const imageUrl = computed(() => {
 </script>
 
 <template>
-    <article
-        class="flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-md sm:w-[280px]"
+    <Link
+        :href="`/properties/${listing.listing_id}`"
+        class="group flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-md transition-shadow duration-200 hover:shadow-lg sm:w-[280px]"
     >
         <div class="relative aspect-[4/3] bg-slate-100">
             <img
@@ -85,6 +87,7 @@ const imageUrl = computed(() => {
             <button
                 type="button"
                 aria-label="Save to favorites"
+                @click.stop.prevent
                 class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-sm transition hover:bg-black/30"
             >
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,5 +136,5 @@ const imageUrl = computed(() => {
                 </span>
             </div>
         </div>
-    </article>
+    </Link>
 </template>

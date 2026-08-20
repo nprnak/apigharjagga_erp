@@ -81,4 +81,9 @@ class Property extends Model
     {
         return $this->hasMany(PropertyPhoto::class, 'property_id', 'property_id');
     }
+
+    public function inquiries(): HasMany
+    {
+        return $this->hasMany(PropertyInquiry::class, 'property_id', 'property_id');
+    }
 }

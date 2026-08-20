@@ -17,6 +17,30 @@ export type Listing = {
     photos?: string[];
 };
 
+export type ListingDetail = Listing & {
+    property_id: number | null;
+    legal_verification_status?: string | null;
+    remarks?: string | null;
+    kitta_no?: string | null;
+    map_sheet_no?: string | null;
+    ownership_type?: string | null;
+    road_access?: string | null;
+    road_width?: string | null;
+    facing_direction?: string | null;
+    year_of_construction?: number | null;
+    structure_type?: string | null;
+    roof_type?: string | null;
+    parking?: string | null;
+    water_supply?: string | null;
+    electricity?: string | null;
+    internet?: string | null;
+    drainage?: string | null;
+    current_building_condition?: string | null;
+    ward_no?: string | null;
+    tole_locality?: string | null;
+    full_address_text?: string | null;
+};
+
 export type CityOption = {
     value: string;
     label: string;

@@ -47,6 +47,8 @@ class AdminPanelProvider extends PanelProvider
                     ->collapsed(false),
                 NavigationGroup::make('Properties')
                     ->collapsed(false),
+                NavigationGroup::make('Inquiries & Leads')
+                    ->collapsed(false),
                 NavigationGroup::make('Clients')
                     ->collapsed(false),
             ])

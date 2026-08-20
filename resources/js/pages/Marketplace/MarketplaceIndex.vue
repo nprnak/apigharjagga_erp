@@ -42,19 +42,11 @@ const minPrice = ref<number | null>(null);
 const maxPrice = ref<number | null>(null);
 const sortBy = ref<string>('newest');
 
-// UI Dropdown & Full-Page detail states
+// UI Dropdown states
 const activeDropdown = ref<'price' | 'type' | 'sort' | null>(null);
 const isAllFiltersOpen = ref(false);
-const selectedProperty = ref<Listing | null>(null);
-const activePhotoIndex = ref<number>(0);
 const favorites = ref<Set<number>>(new Set());
 const activeMobileView = ref<'list' | 'map'>('list');
-
-// Inquiry form inside full-page view
-const inquiryName = ref('');
-const inquiryPhone = ref('');
-const inquiryMessage = ref('');
-const isInquirySent = ref(false);
 
 // Toast feedback
 const toastMessage = ref<string | null>(null);
@@ -68,15 +60,7 @@ function showToast(msg: string) {
 }
 
 function openPropertyDetails(item: Listing) {
-    selectedProperty.value = item;
-    activePhotoIndex.value = 0;
-    isInquirySent.value = false;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function backToListings() {
-    selectedProperty.value = null;
-    activePhotoIndex.value = 0;
+    router.visit(`/properties/${item.listing_id}`);
 }
 
 function toggleFavorite(id: number) {
@@ -87,49 +71,6 @@ function toggleFavorite(id: number) {
         favorites.value.add(id);
         showToast('Saved to your favorite properties!');
     }
-}
-
-function shareProperty(item: Listing) {
-    const url = window.location.origin + '/properties?q=' + encodeURIComponent(item.property_code || item.application_no);
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('Property link copied to clipboard!');
-        });
-    } else {
-        showToast('Link: ' + url);
-    }
-}
-
-function getPropertyPhotos(item: Listing): string[] {
-    if (item.photos && item.photos.length > 0) {
-        return item.photos;
-    }
-    if (item.photo_url) {
-        return [item.photo_url];
-    }
-    return [`https://picsum.photos/seed/property-${item.property_code || item.listing_id}/1200/800`];
-}
-
-function prevPhoto(photos: string[]) {
-    if (photos.length <= 1) return;
-    activePhotoIndex.value = (activePhotoIndex.value - 1 + photos.length) % photos.length;
-}
-
-function nextPhoto(photos: string[]) {
-    if (photos.length <= 1) return;
-    activePhotoIndex.value = (activePhotoIndex.value + 1) % photos.length;
-}
-
-function submitInquiry() {
-    if (!inquiryName.value || !inquiryPhone.value) {
-        showToast('Please provide your name and phone number');
-        return;
-    }
-    isInquirySent.value = true;
-    showToast('Thank you! Our agent will contact you shortly.');
-    inquiryName.value = '';
-    inquiryPhone.value = '';
-    inquiryMessage.value = '';
 }
 
 function toggleDropdown(name: 'price' | 'type' | 'sort') {
@@ -210,9 +151,6 @@ const processedListings = computed(() => {
 });
 
 const activeLocationTitle = computed(() => {
-    if (selectedProperty.value) {
-        return `${selectedProperty.value.property_code} - ${formatAddress(selectedProperty.value)} | Api Ghar Jagga`;
-    }
     if (city.value) {
         return `${city.value} Real Estate & Properties`;
     }
@@ -260,7 +198,6 @@ function formatTypeLabel(t: string | null | undefined): string {
 
 function executeSearch() {
     closeDropdowns();
-    selectedProperty.value = null;
     router.get(
         '/properties',
         {
@@ -285,7 +222,6 @@ function resetAllFilters() {
     minPrice.value = null;
     maxPrice.value = null;
     isAllFiltersOpen.value = false;
-    selectedProperty.value = null;
     closeDropdowns();
     router.get('/properties');
 }
@@ -300,9 +236,6 @@ function handleClickOutside(e: MouseEvent) {
 
 function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-        if (selectedProperty.value) {
-            backToListings();
-        }
         isAllFiltersOpen.value = false;
         closeDropdowns();
     }
@@ -356,7 +289,7 @@ onUnmounted(() => {
                         </div>
                         <div class="flex flex-col">
                             <span class="text-base font-extrabold tracking-tight text-white group-hover:text-blue-100 transition-colors">
-                                Api Ghar Jagga
+                                API Ghar Jagga
                             </span>
                             <span class="text-[10px] tracking-wider uppercase text-blue-200 font-semibold">Real Estate Network</span>
                         </div>
@@ -387,12 +320,7 @@ onUnmounted(() => {
                         >
                             Agreements
                         </a>
-                        <a
-                            href="/client-registration"
-                            class="text-blue-100 hover:text-white transition-colors"
-                        >
-                            Agents & Offices
-                        </a>
+                    
                     </nav>
                 </div>
 
@@ -405,7 +333,7 @@ onUnmounted(() => {
                         Sign In
                     </a>
                     <a
-                        href="/property-listing"
+                        href="/signup"
                         class="hidden sm:inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-xs sm:text-sm font-bold text-blue-800 shadow-sm transition hover:bg-blue-50 active:scale-95"
                     >
                         Post Listing
@@ -415,375 +343,11 @@ onUnmounted(() => {
         </header>
 
         <!-- ========================================================= -->
-        <!-- VIEW 1: FULL-PAGE DEDICATED PROPERTY DETAILS VIEW         -->
+        <!-- SPLIT-VIEW MAP & LISTINGS BROWSER                         -->
+        <!-- Clicking a listing navigates to the dynamic property      -->
+        <!-- detail page (Marketplace/PropertyDetail.vue).             -->
         <!-- ========================================================= -->
-        <div v-if="selectedProperty" class="flex-1 bg-slate-50/60 pb-16">
-            <!-- Sticky Sub-Nav / Breadcrumb & Back Bar -->
-            <div class="sticky top-16 z-30 border-b border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-8 py-3 shadow-xs">
-                <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-                    <button
-                        type="button"
-                        @click="backToListings"
-                        class="inline-flex items-center gap-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-2 text-xs sm:text-sm transition active:scale-95"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span>Back to all properties</span>
-                    </button>
-
-                    <div class="hidden md:flex items-center gap-2 text-xs text-slate-500">
-                        <a href="/properties" class="hover:text-slate-800">Properties</a>
-                        <span>/</span>
-                        <span class="text-slate-700 font-semibold">{{ selectedProperty.municipality || 'Nepal' }}</span>
-                        <span>/</span>
-                        <span class="text-blue-600 font-bold">{{ selectedProperty.property_code }}</span>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            @click="shareProperty(selectedProperty)"
-                            class="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                            <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                                <polyline points="16 6 12 2 8 6"></polyline>
-                                <line x1="12" y1="2" x2="12" y2="15"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                        <button
-                            type="button"
-                            @click="toggleFavorite(selectedProperty.listing_id)"
-                            class="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                            <svg
-                                class="h-4 w-4"
-                                :class="favorites.has(selectedProperty.listing_id) ? 'fill-red-500 text-red-500' : 'fill-none text-slate-500'"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                />
-                            </svg>
-                            <span>{{ favorites.has(selectedProperty.listing_id) ? 'Saved' : 'Save' }}</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Page Main Content Area -->
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
-                <!-- 1. MULTI-PHOTO INTERACTIVE SHOWCASE GALLERY -->
-                <section class="mb-8">
-                    <div class="overflow-hidden rounded-3xl bg-slate-900 shadow-xl border border-slate-200/50">
-                        <!-- Main Active Big Photo -->
-                        <div class="relative aspect-[16/9] sm:aspect-[21/9] w-full select-none overflow-hidden bg-slate-950">
-                            <img
-                                :src="getPropertyPhotos(selectedProperty)[activePhotoIndex]"
-                                :alt="`${selectedProperty.property_code} Photo ${activePhotoIndex + 1}`"
-                                class="h-full w-full object-cover transition-all duration-300"
-                            />
-
-                            <!-- Top Badges Overlay -->
-                            <div class="absolute top-4 left-4 flex items-center gap-2">
-                                <span class="rounded-full bg-blue-600 px-3.5 py-1 text-xs font-bold text-white uppercase tracking-wider shadow-lg">
-                                    {{ selectedProperty.purpose ? (selectedProperty.purpose === 'sale' ? 'For Sale' : selectedProperty.purpose.toUpperCase()) : 'For Sale' }}
-                                </span>
-                                <span v-if="selectedProperty.negotiable" class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white uppercase tracking-wider shadow-lg">
-                                    Negotiable
-                                </span>
-                                <span class="rounded-full bg-black/60 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur">
-                                    Photo {{ activePhotoIndex + 1 }} of {{ getPropertyPhotos(selectedProperty).length }}
-                                </span>
-                            </div>
-
-                            <!-- Left & Right Arrow Controls -->
-                            <button
-                                v-if="getPropertyPhotos(selectedProperty).length > 1"
-                                type="button"
-                                @click="prevPhoto(getPropertyPhotos(selectedProperty))"
-                                class="absolute left-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur shadow-lg transition active:scale-95"
-                                title="Previous Photo"
-                            >
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <button
-                                v-if="getPropertyPhotos(selectedProperty).length > 1"
-                                type="button"
-                                @click="nextPhoto(getPropertyPhotos(selectedProperty))"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur shadow-lg transition active:scale-95"
-                                title="Next Photo"
-                            >
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Clickable Thumbnails Row (All 5 Photos) -->
-                        <div
-                            v-if="getPropertyPhotos(selectedProperty).length > 1"
-                            class="flex gap-3 overflow-x-auto bg-slate-900/95 p-4 border-t border-white/10"
-                        >
-                            <button
-                                v-for="(img, idx) in getPropertyPhotos(selectedProperty)"
-                                :key="idx"
-                                type="button"
-                                @click="activePhotoIndex = idx"
-                                :class="[
-                                    'relative h-18 w-28 shrink-0 overflow-hidden rounded-xl border-2 transition-all',
-                                    activePhotoIndex === idx
-                                        ? 'border-blue-500 ring-2 ring-blue-500/40 opacity-100 scale-102'
-                                        : 'border-transparent opacity-60 hover:opacity-90'
-                                ]"
-                            >
-                                <img :src="img" :alt="`Thumbnail ${idx + 1}`" class="h-full w-full object-cover" />
-                                <span class="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                                    #{{ idx + 1 }}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 2. MAIN PROPERTY DETAILS & INQUIRY SIDEBAR -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Left 2 Cols: Main Specs & Information -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <!-- Heading & Price Card -->
-                        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-slate-100 pb-6">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            Active Listing
-                                        </span>
-                                        <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                                            MLS# {{ selectedProperty.application_no }}
-                                        </span>
-                                    </div>
-                                    <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-3">
-                                        {{ formatTypeLabel(selectedProperty.property_type) }} in {{ selectedProperty.municipality }}
-                                    </h1>
-                                    <p class="text-slate-500 text-sm mt-1 flex items-center gap-1.5">
-                                        <svg class="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span>{{ formatAddress(selectedProperty) }}</span>
-                                    </p>
-                                </div>
-
-                                <div class="sm:text-right shrink-0">
-                                    <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Listed Price</div>
-                                    <div class="text-2xl sm:text-3xl font-black text-blue-800 tracking-tight mt-0.5">
-                                        {{ formatPrice(selectedProperty.price, selectedProperty.purpose) }}
-                                    </div>
-                                    <span v-if="selectedProperty.negotiable" class="text-xs text-emerald-600 font-bold">
-                                        * Price is negotiable
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- 4 Key Specs Grid -->
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6">
-                                <div class="rounded-2xl bg-slate-50/80 border border-slate-100 p-4 text-center">
-                                    <div class="text-xs font-semibold text-slate-500">Property Type</div>
-                                    <div class="text-base font-bold text-slate-900 mt-1">{{ formatTypeLabel(selectedProperty.property_type) }}</div>
-                                </div>
-                                <div class="rounded-2xl bg-slate-50/80 border border-slate-100 p-4 text-center">
-                                    <div class="text-xs font-semibold text-slate-500">Total Area</div>
-                                    <div class="text-base font-bold text-slate-900 mt-1">{{ selectedProperty.area || 'N/A' }}</div>
-                                </div>
-                                <div class="rounded-2xl bg-slate-50/80 border border-slate-100 p-4 text-center">
-                                    <div class="text-xs font-semibold text-slate-500">Covered Area</div>
-                                    <div class="text-base font-bold text-slate-900 mt-1">{{ selectedProperty.covered_area || selectedProperty.area || 'N/A' }}</div>
-                                </div>
-                                <div class="rounded-2xl bg-slate-50/80 border border-slate-100 p-4 text-center">
-                                    <div class="text-xs font-semibold text-slate-500">Floors</div>
-                                    <div class="text-base font-bold text-slate-900 mt-1">{{ selectedProperty.no_of_floors ? `${selectedProperty.no_of_floors} Floors` : 'Land Plot' }}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Detailed Technical & Location Specifications -->
-                        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <span>Property Details & Verification</span>
-                            </h2>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div class="space-y-3 text-sm">
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Property Code:</span>
-                                        <span class="font-bold text-slate-800">{{ selectedProperty.property_code || 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Application Number:</span>
-                                        <span class="font-bold text-slate-800">{{ selectedProperty.application_no }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Municipality:</span>
-                                        <span class="font-bold text-slate-800">{{ selectedProperty.municipality || 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2">
-                                        <span class="text-slate-500">District:</span>
-                                        <span class="font-bold text-slate-800">{{ selectedProperty.district || 'N/A' }}</span>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-3 text-sm">
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Province:</span>
-                                        <span class="font-bold text-slate-800">{{ selectedProperty.province || 'Bagmati' }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Country:</span>
-                                        <span class="font-bold text-slate-800">Nepal</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b border-slate-100">
-                                        <span class="text-slate-500">Pricing Status:</span>
-                                        <span class="font-bold text-emerald-600">{{ selectedProperty.negotiable ? 'Negotiable' : 'Fixed' }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2">
-                                        <span class="text-slate-500">Legal Verification:</span>
-                                        <span class="font-bold text-blue-700">✓ AGJ Verified Record</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Features & Highlights -->
-                        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h2 class="text-lg font-bold text-slate-900 mb-4">Features & Amenities</h2>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Road Access
-                                </div>
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Electricity Line
-                                </div>
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Water Supply
-                                </div>
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Drainage System
-                                </div>
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Parking Space
-                                </div>
-                                <div class="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-700 border border-slate-100">
-                                    <span class="text-emerald-600">✓</span> Clear Ownership
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Col: Sticky Inquire & Quick Actions Box -->
-                    <div class="space-y-6">
-                        <!-- Direct Agent Contact Card -->
-                        <div class="sticky top-32 rounded-3xl border border-blue-100 bg-white p-6 shadow-lg shadow-blue-900/5">
-                            <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-md shadow-blue-600/20">
-                                    AGJ
-                                </div>
-                                <div>
-                                    <div class="font-bold text-slate-900 text-base">Api Ghar Jagga Agent</div>
-                                    <div class="text-xs text-blue-600 font-semibold">Verified Real Estate Network</div>
-                                </div>
-                            </div>
-
-                            <div class="pt-4 space-y-3">
-                                <a
-                                    href="tel:9800000000"
-                                    class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 font-bold text-sm shadow-md shadow-blue-600/20 transition active:scale-95"
-                                >
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                    </svg>
-                                    <span>Call Agent: 9800000000</span>
-                                </a>
-
-                                <a
-                                    href="/agreement"
-                                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 py-3 px-4 font-bold text-sm transition"
-                                >
-                                    <span>📝 Draft Purchase Agreement</span>
-                                </a>
-
-                                <a
-                                    href="/annex-c"
-                                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 py-3 px-4 font-bold text-sm transition"
-                                >
-                                    <span>📊 Request Official Valuation</span>
-                                </a>
-                            </div>
-
-                            <!-- Send Inquiry Form -->
-                            <div class="mt-6 pt-5 border-t border-slate-100">
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Send Direct Inquiry</h3>
-
-                                <div v-if="isInquirySent" class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-semibold mb-3">
-                                    ✓ Inquiry sent! Our representative will contact you shortly.
-                                </div>
-
-                                <form @submit.prevent="submitInquiry" class="space-y-3">
-                                    <div>
-                                        <input
-                                            v-model="inquiryName"
-                                            type="text"
-                                            required
-                                            placeholder="Your Full Name"
-                                            class="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <input
-                                            v-model="inquiryPhone"
-                                            type="tel"
-                                            required
-                                            placeholder="Phone Number (e.g. 98XXXXXXXX)"
-                                            class="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <textarea
-                                            v-model="inquiryMessage"
-                                            rows="3"
-                                            placeholder="I am interested in this property..."
-                                            class="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none resize-none"
-                                        ></textarea>
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        class="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2.5 text-xs font-bold shadow transition"
-                                    >
-                                        Send Message
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================================= -->
-        <!-- VIEW 2: SPLIT-VIEW MAP & LISTINGS BROWSER (DEFAULT)       -->
-        <!-- ========================================================= -->
-        <div v-else class="flex flex-1 flex-col overflow-hidden h-[calc(100vh-64px)]">
+        <div class="flex flex-1 flex-col overflow-hidden h-[calc(100vh-64px)]">
             <!-- FILTER & SEARCH TOOLBAR -->
             <div class="z-30 shrink-0 border-b border-blue-100 bg-white/95 py-2.5 px-4 sm:px-6 shadow-xs">
                 <div class="flex flex-wrap items-center gap-2.5 lg:gap-3">

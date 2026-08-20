@@ -8,6 +8,7 @@ use App\Http\Controllers\KycController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyInquiryController;
 use App\Http\Controllers\PropertyListingController;
 use App\Http\Controllers\ValuationRequestController;
 use Illuminate\Http\Request;
@@ -17,6 +18,9 @@ Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
 
 // Public marketplace pages
 Route::get('/properties', [MarketplaceController::class, 'index'])->name('properties.index');
+Route::get('/properties/{listing}', [MarketplaceController::class, 'show'])->name('properties.show');
+
+Route::post('/inquiries', [PropertyInquiryController::class, 'store'])->name('inquiries.store');
 
 Route::get('/property-listing', [PropertyListingController::class, 'index'])->name('property.listing');
 Route::post('/property-listing', [PropertyListingController::class, 'store'])->name('property.listing.store');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Property;
 use App\Models\PropertyListing;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -75,18 +76,13 @@ class MarketplaceController extends Controller
     }
 
     /**
-     * Latest approved/active listings for the homepage carousel.
+     * Base query for listings that are safe to expose on the public marketplace
+     * (used by the featured carousel, the search grid, and the detail page so
+     * that a raw listing/property ID can't be guessed to view a hidden record).
      */
-    private function featuredQuery(int $limit)
+    private function visibleListingsQuery()
     {
-        $limit = max(1, min($limit, 24));
-
         return PropertyListing::query()
-            ->with([
-                'property:property_id,property_code,property_type,area,covered_area,no_of_floors,status,address_id',
-                'property.address:address_id,municipality,district,province',
-                'property.photos',
-            ])
             ->where(function ($q) {
                 $q->where('listing_status', 'approved')
                     ->orWhereNull('listing_status')
@@ -95,7 +91,22 @@ class MarketplaceController extends Controller
             ->whereHas('property', function ($q) {
                 $q->whereIn('approval_status', ['approved', 'pending'])
                     ->orWhereIn('status', ['listed', 'draft']);
-            })
+            });
+    }
+
+    /**
+     * Latest approved/active listings for the homepage carousel.
+     */
+    private function featuredQuery(int $limit)
+    {
+        $limit = max(1, min($limit, 24));
+
+        return $this->visibleListingsQuery()
+            ->with([
+                'property:property_id,property_code,property_type,area,covered_area,no_of_floors,status,address_id',
+                'property.address:address_id,municipality,district,province',
+                'property.photos',
+            ])
             ->orderByRaw("CASE WHEN listing_status = 'approved' THEN 0 ELSE 1 END")
             ->orderByDesc('listing_id')
             ->limit($limit);
@@ -148,6 +159,30 @@ class MarketplaceController extends Controller
         ]);
     }
 
+    /**
+     * Public property detail page. Only listings that pass the same visibility
+     * rules as the search grid/carousel can be viewed here.
+     */
+    public function show(int $listing): InertiaResponse|RedirectResponse
+    {
+        $propertyListing = $this->visibleListingsQuery()
+            ->with([
+                'property.address',
+                'property.photos',
+            ])
+            ->find($listing);
+
+        if (! $propertyListing) {
+            return redirect()
+                ->route('properties.index')
+                ->with('notice', 'That listing is no longer available.');
+        }
+
+        return Inertia::render('Marketplace/PropertyDetail', [
+            'listing' => $this->transformListingDetail($propertyListing),
+        ]);
+    }
+
     private function queryListings(Request $request, int $limit)
     {
         $q = trim((string) $request->query('q', ''));
@@ -156,21 +191,12 @@ class MarketplaceController extends Controller
 
         $limit = max(1, min($limit, 100));
 
-        $query = PropertyListing::query()
+        $query = $this->visibleListingsQuery()
             ->with([
                 'property:property_id,property_code,property_type,area,covered_area,no_of_floors,status,address_id',
                 'property.address:address_id,municipality,district,province',
                 'property.photos',
             ])
-            ->where(function ($q2) {
-                $q2->where('listing_status', 'approved')
-                    ->orWhereNull('listing_status')
-                    ->orWhere('listing_status', 'listed');
-            })
-            ->whereHas('property', function ($q2) {
-                $q2->whereIn('approval_status', ['approved', 'pending'])
-                    ->orWhereIn('status', ['listed', 'draft']);
-            })
             ->orderByRaw("CASE WHEN listing_status = 'approved' THEN 0 ELSE 1 END")
             ->orderByDesc('listing_id')
             ->limit($limit);
@@ -238,6 +264,72 @@ class MarketplaceController extends Controller
                 'photos' => $photos,
             ];
         })->values()->toArray();
+    }
+
+    /**
+     * Full dynamic payload for the property detail page. Deliberately omits
+     * legally-sensitive identifiers (ownership certificate / building permit
+     * numbers) and the owner's personal contact details, which are not
+     * appropriate to expose to anonymous marketplace visitors.
+     */
+    private function transformListingDetail(PropertyListing $listing): array
+    {
+        $property = $listing->property;
+        $address = $property?->address;
+
+        $price = null;
+        if ($listing->purpose_of_listing === 'rent') {
+            $price = $listing->rental_amount ?? null;
+        } else {
+            $price = $listing->expected_selling_price
+                ?? $listing->minimum_acceptable_price
+                ?? null;
+        }
+
+        $photos = $property?->photos?->map(fn ($p) => $p->photo_url)->filter()->values()->toArray() ?? [];
+
+        return [
+            'listing_id' => $listing->listing_id,
+            'application_no' => $listing->application_no,
+            'purpose' => $listing->purpose_of_listing,
+            'price' => $price,
+            'negotiable' => (bool) $listing->negotiable,
+            'legal_verification_status' => $listing->legal_verification_status,
+            'remarks' => $listing->remarks,
+
+            'property_id' => $property?->property_id,
+            'property_code' => $property?->property_code,
+            'property_type' => $property?->property_type,
+            'area' => $property?->area,
+            'covered_area' => $property?->covered_area,
+            'no_of_floors' => $property?->no_of_floors,
+            'status' => $property?->status,
+            'kitta_no' => $property?->kitta_no,
+            'map_sheet_no' => $property?->map_sheet_no,
+            'ownership_type' => $property?->ownership_type,
+            'road_access' => $property?->road_access,
+            'road_width' => $property?->road_width,
+            'facing_direction' => $property?->facing_direction,
+            'year_of_construction' => $property?->year_of_construction,
+            'structure_type' => $property?->structure_type,
+            'roof_type' => $property?->roof_type,
+            'parking' => $property?->parking,
+            'water_supply' => $property?->water_supply,
+            'electricity' => $property?->electricity,
+            'internet' => $property?->internet,
+            'drainage' => $property?->drainage,
+            'current_building_condition' => $property?->current_building_condition,
+
+            'municipality' => $address?->municipality,
+            'district' => $address?->district,
+            'province' => $address?->province,
+            'ward_no' => $address?->ward_no,
+            'tole_locality' => $address?->tole_locality,
+            'full_address_text' => $address?->full_address_text,
+
+            'photo_url' => $photos[0] ?? null,
+            'photos' => $photos,
+        ];
     }
 }
 

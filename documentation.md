@@ -212,4 +212,73 @@ The 7-day submission trend used `GROUP BY DATE(created_at)` which can fail under
 
 ---
 
-*Last updated: August 18, 2026*
+## Feature: Dynamic Property Detail Page & Backend-Connected Inquiries (August 20, 2026)
+
+### What changed
+
+Previously, clicking a property card in `MarketplaceIndex.vue` just toggled an inline overlay within the same component (no real URL, no deep-linking), and the "Send Direct Inquiry" form was purely cosmetic — it never reached the backend. The Home page's featured carousel (`PropertyCarousel` / `PropertyCard`) wasn't clickable at all.
+
+1. **New dynamic property detail page** — `resources/js/pages/Marketplace/PropertyDetail.vue`, served at `GET /properties/{listing}` via `MarketplaceController@show`. All data (price, specs, address, amenities, legal verification status, photos) comes from the database — nothing is hardcoded. Legally-sensitive identifiers (ownership certificate no., building permit no.) and the owner's personal contact info are intentionally excluded from the public payload.
+2. **Both entry points now link to the same page:**
+   - `MarketplaceIndex.vue` grid cards navigate via `router.visit('/properties/{id}')` instead of toggling local state. The old ~370-line inline detail overlay was removed.
+   - `PropertyCard.vue` (used by the Home page's `PropertyCarousel`) is now wrapped in an Inertia `<Link>` to the same route.
+3. **Real inquiries table** — new `property_inquiries` migration/model (`App\Models\PropertyInquiry`), submitted via `POST /inquiries` (`PropertyInquiryController@store`). The detail page's inquiry form posts here with axios and shows a live success/error state.
+4. **Admin "Inquiries & Leads" section** — new `App\Filament\Resources\InquiryResource` (List/View/Edit) shows every submitted inquiry with the buyer's name/phone/email/message, which property/listing it relates to, and quick actions to mark a lead as *Contacted* or *Closed*.
+
+### Files added
+
+- `database/migrations/2026_08_20_070000_create_property_inquiries_table.php`
+- `app/Models/PropertyInquiry.php`
+- `app/Http/Controllers/PropertyInquiryController.php`
+- `app/Filament/Resources/InquiryResource.php` (+ `Pages/ListInquiries.php`, `Pages/ViewInquiry.php`, `Pages/EditInquiry.php`)
+- `resources/js/pages/Marketplace/PropertyDetail.vue`
+
+### Files modified
+
+- `routes/web.php` — added `properties.show` (`GET /properties/{listing}`) and `inquiries.store` (`POST /inquiries`).
+- `app/Http/Controllers/MarketplaceController.php` — extracted a shared `visibleListingsQuery()` (so the carousel, search grid, and detail page all apply the same "only show approved/listed" visibility rule — a raw ID can't be guessed to view a hidden listing), added `show()` and `transformListingDetail()`.
+- `app/Models/Property.php` — added `inquiries()` relation.
+- `app/Providers/Filament/AdminPanelProvider.php` — registered the "Inquiries & Leads" navigation group.
+- `resources/js/pages/Marketplace/MarketplaceIndex.vue` — removed the inline detail overlay and its dedicated state/handlers; cards now navigate to the real detail page.
+- `resources/js/components/home/PropertyCard.vue` — wrapped in an Inertia `<Link>` to the detail page.
+- `resources/js/types/marketplace.ts` — added `ListingDetail` type with the extra fields the detail page needs.
+
+### Verification
+
+- `php artisan migrate` ran the new table successfully; `php artisan route:list` shows `properties.show` and `inquiries.store` registered (and the auto-discovered `admin/inquiries` Filament routes).
+- `npm run build` compiled `PropertyDetail.vue` and the updated `MarketplaceIndex`/`MarketplaceLanding` bundles with no errors.
+- Hit `GET /properties/{id}` directly against the running dev server: a pending/draft listing correctly redirects back to `/properties` (visibility rule working), while an approved listing returns the `Marketplace/PropertyDetail` Inertia payload fully populated from the database.
+- Submitted `POST /inquiries` with a valid CSRF/session cookie flow and received `201 Created` with the new `inquiry_id`.
+
+---
+
+## Enhancement: Admin Inquiry View Page Now Shows Full Property Details (August 20, 2026)
+
+### What changed
+
+The individual inquiry "View" page (`/admin/inquiries/{id}`) previously fell back to Filament's default behavior of rendering the *form* schema in a disabled state, because `InquiryResource` never defined an `infolist()`. That form only had a bare, un-dehydrated `property.property_code` field, so opening a specific inquiry did **not** show the property's type, area, or address — and there was no way to mark a lead as contacted without going back to the table row action.
+
+1. **New `InquiryResource::infolist()`** — the View page now renders a proper read-only layout with four sections:
+   - **Buyer / Tenant Details** — name, phone (copyable), email, received date.
+   - **Property Inquired About** — a computed "Property" label (e.g. *"House in Bhaktapur"*), the property code (badge), a computed **full address** (tole/ward/municipality/district/province), property type, area, covered area, and the listing's purpose (sale/rent/etc.).
+   - **Inquiry Message** — the buyer's message.
+   - **Follow-up** — current status badge and any internal admin note.
+2. **"Mark Contacted" / "Close" actions on the View and Edit pages** — previously these actions only existed as row actions on the table. They're now shared static helpers (`InquiryResource::markContactedAction()` / `markClosedAction()`) reused by the table, `ViewInquiry`, and `EditInquiry` pages, so an admin can update a lead's status directly from the detail page's header, not just from the list.
+3. **Consistent detail also added to the Edit form** — the edit screen now shows the same computed property name/type/address (as read-only entries) above the editable Status/Internal Note fields, so admins editing a lead don't lose context on which property it's about.
+4. **Eager loading** — `InquiryResource::getEloquentQuery()` now eager-loads `property.address` and `listing` for every inquiry query (table, view, edit), avoiding N+1 queries when rendering these new fields.
+
+### Files modified
+
+- `app/Filament/Resources/InquiryResource.php` — added `infolist()`, `getEloquentQuery()`, `propertyName()`/`propertyAddress()` helpers, and public `markContactedAction()`/`markClosedAction()` helpers reused by the table.
+- `app/Filament/Resources/InquiryResource/Pages/ViewInquiry.php` — added the Mark Contacted / Close header actions.
+- `app/Filament/Resources/InquiryResource/Pages/EditInquiry.php` — added the same header actions for consistency.
+
+### Verification
+
+- `php -l` on all three modified files reported no syntax errors.
+- `php artisan optimize:clear` ran cleanly (config/route/view/Filament caches rebuilt without error).
+- Verified via a logged-in admin browser session that `/admin/inquiries/{id}` renders the property code, computed property name, full address, buyer details, and the Mark Contacted/Close header actions, and that clicking "Mark Contacted" updates the status badge and shows a success notification.
+
+---
+
+*Last updated: August 20, 2026*
