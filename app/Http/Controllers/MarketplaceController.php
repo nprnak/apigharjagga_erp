@@ -216,7 +216,8 @@ class MarketplaceController extends Controller
                     ?? null;
             }
 
-            $photoUrl = $property?->photos?->first()?->photo_url ?? null;
+            $photos = $property?->photos?->map(fn ($p) => $p->photo_url)->filter()->values()->toArray() ?? [];
+            $photoUrl = $photos[0] ?? null;
 
             return [
                 'listing_id' => $listing->listing_id,
@@ -234,6 +235,7 @@ class MarketplaceController extends Controller
                 'district' => $address?->district,
                 'province' => $address?->province,
                 'photo_url' => $photoUrl,
+                'photos' => $photos,
             ];
         })->values()->toArray();
     }

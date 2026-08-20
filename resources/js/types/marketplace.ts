@@ -14,6 +14,7 @@ export type Listing = {
     district?: string | null;
     province?: string | null;
     photo_url?: string | null;
+    photos?: string[];
 };
 
 export type CityOption = {

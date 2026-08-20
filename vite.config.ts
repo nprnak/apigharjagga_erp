@@ -47,6 +47,7 @@ export default defineConfig({
         }),
         wayfinder({
             formVariants: true,
+            command: '"C:\\Users\\ACER\\.config\\herd\\bin\\php84\\php.exe" artisan wayfinder:generate',
         }),
     ],
 });
