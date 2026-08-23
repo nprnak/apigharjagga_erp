@@ -25,16 +25,18 @@ class ListMyProperties extends ListRecords
                 ->icon('heroicon-m-plus')
                 ->tooltip(
                     ! $isKycApproved
-                        ? 'You must complete KYC verification before listing a property'
+                        ? 'Please complete the KYC to list the property'
                         : null
                 )
                 ->action(function () use ($isKycApproved) {
                     if (! $isKycApproved) {
                         Notification::make()
                             ->title('KYC Verification Required')
-                            ->body('Please complete your KYC verification first to list properties.')
+                            ->body('Please complete the KYC to list the property.')
                             ->warning()
                             ->send();
+
+                        $this->redirect(url('/dashboard/kyc-verification-page'));
 
                         return;
                     }

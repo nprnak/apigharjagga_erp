@@ -127,6 +127,63 @@
                 </p>
             </div>
 
+            <!-- KYC Verification Notice if Unverified -->
+            <div
+                v-if="isAuthenticated && !isKycVerified"
+                class="mx-auto mb-10 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50/90 p-5 text-amber-900 shadow-sm"
+            >
+                <div
+                    class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                    <div class="flex items-center gap-3.5">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-amber-950">
+                                KYC Verification Required
+                            </h3>
+                            <p class="mt-0.5 text-xs text-amber-800">
+                                Please complete the KYC to list the property. Property submission is enabled once your identity verification is approved by the admin.
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        href="/dashboard/kyc-verification-page"
+                        class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
+                    >
+                        <span>Complete KYC Verification</span>
+                        <svg
+                            class="h-3.5 w-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
             <!-- Progress Tracker -->
             <div class="relative mx-auto mb-12 max-w-3xl">
                 <div
@@ -1478,6 +1535,19 @@ import axios from 'axios';
 import FormField from '../../components/FormField.vue';
 import SignatureUpload from '../../components/SignatureUpload.vue';
 
+const props = withDefaults(
+    defineProps<{
+        isKycVerified?: boolean;
+        kycStatus?: string;
+        isAuthenticated?: boolean;
+    }>(),
+    {
+        isKycVerified: false,
+        kycStatus: 'unsubmitted',
+        isAuthenticated: false,
+    }
+);
+
 // ── Form State ─────────────────────────────────────────────────────────────
 const emptyForm = () => ({
     // Applicant Details
@@ -1730,6 +1800,12 @@ function prevStep() {
 }
 
 async function handleNextOrSubmit() {
+    if (props.isAuthenticated && !props.isKycVerified) {
+        alert('Please complete the KYC to list the property.');
+        window.location.href = '/dashboard/kyc-verification-page';
+        return;
+    }
+
     if (!validateCurrentStep()) return;
 
     if (currentStep.value < steps.length - 1) {
@@ -1744,6 +1820,12 @@ async function handleNextOrSubmit() {
 }
 
 async function submitForm() {
+    if (props.isAuthenticated && !props.isKycVerified) {
+        alert('Please complete the KYC to list the property.');
+        window.location.href = '/dashboard/kyc-verification-page';
+        return;
+    }
+
     submitting.value = true;
     try {
         const csrfToken = (
@@ -1759,6 +1841,11 @@ async function submitForm() {
         submitted.value = true;
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
+        if (err.response?.status === 403) {
+            alert(err.response.data.message || 'Please complete the KYC to list the property.');
+            window.location.href = '/dashboard/kyc-verification-page';
+            return;
+        }
         if (err.response?.status === 422) {
             const fieldErrors = err.response.data.errors;
             Object.entries(fieldErrors).forEach(([key, msgs]) => {

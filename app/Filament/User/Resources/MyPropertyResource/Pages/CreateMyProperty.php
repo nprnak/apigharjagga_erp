@@ -18,13 +18,31 @@ class CreateMyProperty extends CreateRecord
 
     protected static ?string $title = 'Submit New Property Listing';
 
+    public function mount(): void
+    {
+        $user = Auth::user();
+        if ($user?->kycVerification?->status !== 'approved') {
+            Notification::make()
+                ->title('KYC Verification Required')
+                ->body('Please complete the KYC to list the property.')
+                ->warning()
+                ->send();
+
+            $this->redirect(url('/dashboard/kyc-verification-page'));
+
+            return;
+        }
+
+        parent::mount();
+    }
+
     protected function beforeCreate(): void
     {
         $user = Auth::user();
         if ($user?->kycVerification?->status !== 'approved') {
             Notification::make()
                 ->title('KYC Approval Required')
-                ->body('You must have an approved KYC verification before listing a property.')
+                ->body('Please complete the KYC to list the property.')
                 ->danger()
                 ->send();
 
