@@ -10,7 +10,9 @@ class EnsureUserIsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->role !== 'admin') {
+        // The admin panel authenticates on the dedicated "admin" guard, so
+        // check that guard here rather than the default (web) guard.
+        if ($request->user('admin')?->role !== 'admin') {
             abort(403);
         }
 

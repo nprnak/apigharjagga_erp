@@ -29,13 +29,14 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->authGuard('admin')
             ->login()
             ->brandName('API GharJagga MIS')
             ->brandLogo(null)
             ->darkMode(true)
             ->colors([
                 'primary' => Color::Blue,
-                'gray'    => Color::Zinc,
+                'gray' => Color::Zinc,
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->renderHook(
