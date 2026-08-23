@@ -70,11 +70,11 @@ const imageUrl = computed(() => {
         :href="`/properties/${listing.listing_id}`"
         class="group flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-md transition-shadow duration-200 hover:shadow-lg sm:w-[280px]"
     >
-        <div class="relative aspect-[4/3] bg-slate-100">
+        <div class="relative h-[180px] w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[196px]">
             <img
                 :src="imageUrl"
                 :alt="typeLabel"
-                class="h-full w-full object-cover"
+                class="absolute inset-0 h-full w-full object-cover"
                 loading="lazy"
             />
 

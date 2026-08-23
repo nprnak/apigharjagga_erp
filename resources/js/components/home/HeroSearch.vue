@@ -31,7 +31,7 @@ const placeholder: Record<Tab, string> = {
         <div
             class="absolute inset-0 bg-cover bg-center"
             style="
-                background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80');
+                background-image: url('/images/home.jpg');
             "
         ></div>
         <div class="absolute inset-0 bg-slate-900/35"></div>
