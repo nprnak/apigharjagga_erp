@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources;
 
 use App\Filament\User\Resources\MyPropertyResource\Pages;
+use App\Filament\Support\LocationSelects;
 use App\Models\Property;
 use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
@@ -60,166 +61,209 @@ class MyPropertyResource extends Resource
         $isKycApproved = Auth::user()?->kycVerification?->status === 'approved';
 
         return $schema->components([
-            Section::make('1. Property Details & Specifications')
-                ->description('Specify property type, ownership, and structural dimensions')
+            Section::make('Property Details & Specifications')
+                ->description('Tell us what you are listing — its type, your ownership capacity, and the structural facts a buyer checks first.')
+                ->icon('heroicon-o-home-modern')
+                ->aside()
                 ->columns(2)
-                ->schema([
-                    TextInput::make('property_code')
-                        ->label('Property Reference Code')
-                        ->disabled()
-                        ->placeholder('Auto-generated upon submission'),
+                ->schema(static::propertyDetailsFields()),
 
-                    Select::make('property_type')
-                        ->label('Property Category')
-                        ->options([
-                            'land' => 'Land (जग्गा)',
-                            'house' => 'House (घर)',
-                            'apartment' => 'Apartment (अपार्टमेन्ट)',
-                            'commercial_building' => 'Commercial Building',
-                            'office_space' => 'Office Space',
-                            'industrial_property' => 'Industrial Property',
-                            'agricultural_land' => 'Agricultural Land',
-                            'other' => 'Other',
-                        ])
-                        ->required(),
-
-                    Select::make('ownership_role')
-                        ->label('Ownership Capacity')
-                        ->options([
-                            'self' => 'Sole Owner (Self)',
-                            'family_member' => 'Family Member',
-                            'authorized_representative' => 'Authorized Power of Attorney / Representative',
-                            'company' => 'Company / Corporate Entity',
-                        ])
-                        ->required(),
-
-                    Select::make('purpose_of_listing')
-                        ->label('Listing Intent')
-                        ->options([
-                            'sale' => 'For Sale (बिक्री)',
-                            'rent' => 'For Rent (भाडा)',
-                            'lease' => 'Long-Term Lease',
-                            'investment' => 'Joint Investment',
-                        ])
-                        ->default('sale')
-                        ->required(),
-
-                    TextInput::make('kitta_no')
-                        ->label('Kitta Number (कित्ता नं.)')
-                        ->maxLength(50),
-
-                    TextInput::make('area')
-                        ->label('Land Area (जग्गाको क्षेत्रफल)')
-                        ->placeholder('e.g. 0-4-2-0 or 1500 sq.ft')
-                        ->maxLength(100),
-
-                    TextInput::make('covered_area')
-                        ->label('Covered / Built-up Area')
-                        ->placeholder('e.g. 2400 sq.ft')
-                        ->maxLength(100),
-
-                    TextInput::make('no_of_floors')
-                        ->label('Number of Stories / Floors')
-                        ->numeric()
-                        ->minValue(0),
-
-                    TextInput::make('year_of_construction')
-                        ->label('Year Built (B.S. / A.D.)')
-                        ->numeric()
-                        ->minValue(1950),
-
-                    Select::make('facing_direction')
-                        ->label('Facing Orientation (दिशा)')
-                        ->options([
-                            'East' => 'East (पूर्व)',
-                            'West' => 'West (पश्चिम)',
-                            'North' => 'North (उत्तर)',
-                            'South' => 'South (दक्षिण)',
-                            'North-East' => 'North-East (ईशान)',
-                            'South-East' => 'South-East (आग्नेय)',
-                            'North-West' => 'North-West (वायव्य)',
-                            'South-West' => 'South-West (नैऋत्य)',
-                        ]),
-
-                    TextInput::make('structure_type')
-                        ->label('Structure System')
-                        ->placeholder('e.g. RCC Frame / Load Bearing')
-                        ->maxLength(100),
-
-                    TextInput::make('parking')
-                        ->label('Parking Capacity')
-                        ->placeholder('e.g. 2 Cars + 4 Bikes')
-                        ->maxLength(100),
-                ]),
-
-            Section::make('2. Location & Administrative Details')
-                ->description('Location details according to local government administration')
+            Section::make('Location & Administrative Details')
+                ->description('Where the property sits, as recorded by the local government. Buyers filter by these fields first.')
+                ->icon('heroicon-o-map')
+                ->aside()
                 ->columns(2)
-                ->schema([
-                    TextInput::make('province')
-                        ->label('Province (प्रदेश)')
-                        ->required()
-                        ->maxLength(100),
+                ->schema(static::locationFields()),
 
-                    TextInput::make('district')
-                        ->label('District (जिल्ला)')
-                        ->required()
-                        ->maxLength(100),
-
-                    TextInput::make('municipality')
-                        ->label('Municipality / Rural Municipality (गा.पा. / न.पा.)')
-                        ->required()
-                        ->maxLength(100),
-
-                    TextInput::make('ward_no')
-                        ->label('Ward No. (वडा नं.)')
-                        ->required()
-                        ->maxLength(10),
-
-                    TextInput::make('tole_locality')
-                        ->label('Tole / Locality / Landmark')
-                        ->columnSpanFull()
-                        ->required()
-                        ->maxLength(150),
-                ]),
-
-            Section::make('3. Financials & Pricing Expectations')
-                ->description('Expected pricing for sale or monthly rent')
+            Section::make('Financials & Pricing Expectations')
+                ->description('Set the numbers you expect. Fill the selling price for sales, the monthly rent for rentals — or both.')
+                ->icon('heroicon-o-banknotes')
+                ->aside()
                 ->columns(2)
-                ->schema([
-                    TextInput::make('expected_selling_price')
-                        ->label('Expected Selling Price (NPR)')
-                        ->numeric()
-                        ->prefix('Rs.')
-                        ->minValue(0),
+                ->schema(static::financialFields()),
 
-                    TextInput::make('rental_amount')
-                        ->label('Expected Monthly Rental (NPR)')
-                        ->numeric()
-                        ->prefix('Rs.')
-                        ->minValue(0),
-                ]),
-
-            Section::make('4. Property Photographs & Media')
-                ->description('Upload multiple pictures of the property (exterior, interior, road access, surroundings)')
-                ->schema([
-                    FileUpload::make('property_photos')
-                        ->label('Property Photographs (तस्विरहरू)')
-                        ->multiple()
-                        ->reorderable()
-                        ->image()
-                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
-                        ->maxFiles(12)
-                        ->maxSize(20480)
-                        ->disk('public')
-                        ->directory('properties/photos')
-                        ->openable()
-                        ->downloadable()
-                        ->imageEditor()
-                        ->helperText('Upload multiple photos of the property. Supports JPG, PNG, WebP (Max 20MB each, up to 12 pictures).')
-                        ->columnSpanFull(),
-                ]),
+            Section::make('Property Photographs & Media')
+                ->description('Listings with photos get far more enquiries. Show the exterior, interior, road access, and surroundings.')
+                ->icon('heroicon-o-camera')
+                ->aside()
+                ->schema(static::mediaFields()),
         ]);
+    }
+
+    /**
+     * @return array<int, \Filament\Forms\Components\Field>
+     */
+    public static function propertyDetailsFields(): array
+    {
+        return [
+            TextInput::make('property_code')
+                ->label('Property Reference Code')
+                ->disabled()
+                ->prefixIcon('heroicon-m-hashtag')
+                ->placeholder('Auto-generated on submission')
+                ->columnSpanFull(),
+
+            Select::make('property_type')
+                ->label('Property Category')
+                ->options([
+                    'land' => 'Land (जग्गा)',
+                    'house' => 'House (घर)',
+                    'apartment' => 'Apartment (अपार्टमेन्ट)',
+                    'commercial_building' => 'Commercial Building',
+                    'office_space' => 'Office Space',
+                    'industrial_property' => 'Industrial Property',
+                    'agricultural_land' => 'Agricultural Land',
+                    'other' => 'Other',
+                ])
+                ->native(false)
+                ->searchable()
+                ->required(),
+
+            Select::make('ownership_role')
+                ->label('Ownership Capacity')
+                ->options([
+                    'self' => 'Sole Owner (Self)',
+                    'family_member' => 'Family Member',
+                    'authorized_representative' => 'Authorized Power of Attorney / Representative',
+                    'company' => 'Company / Corporate Entity',
+                ])
+                ->native(false)
+                ->required(),
+
+            Select::make('purpose_of_listing')
+                ->label('Listing Intent')
+                ->options([
+                    'sale' => 'For Sale (बिक्री)',
+                    'rent' => 'For Rent (भाडा)',
+                    'lease' => 'Long-Term Lease',
+                    'investment' => 'Joint Investment',
+                ])
+                ->default('sale')
+                ->native(false)
+                ->required(),
+
+            Select::make('facing_direction')
+                ->label('Facing Orientation (दिशा)')
+                ->options([
+                    'East' => 'East (पूर्व)',
+                    'West' => 'West (पश्चिम)',
+                    'North' => 'North (उत्तर)',
+                    'South' => 'South (दक्षिण)',
+                    'North-East' => 'North-East (ईशान)',
+                    'South-East' => 'South-East (आग्नेय)',
+                    'North-West' => 'North-West (वायव्य)',
+                    'South-West' => 'South-West (नैऋत्य)',
+                ])
+                ->native(false)
+                ->prefixIcon('heroicon-m-globe-alt'),
+
+            TextInput::make('kitta_no')
+                ->label('Kitta Number (कित्ता नं.)')
+                ->prefixIcon('heroicon-m-map-pin')
+                ->maxLength(50),
+
+            TextInput::make('area')
+                ->label('Land Area (जग्गाको क्षेत्रफल)')
+                ->placeholder('0-4-2-0 or 1500 sq.ft')
+                ->hint('Ropani-Aana or sq.ft')
+                ->maxLength(100),
+
+            TextInput::make('covered_area')
+                ->label('Covered / Built-up Area')
+                ->placeholder('2400 sq.ft')
+                ->maxLength(100),
+
+            TextInput::make('no_of_floors')
+                ->label('Number of Stories / Floors')
+                ->numeric()
+                ->minValue(0),
+
+            TextInput::make('year_of_construction')
+                ->label('Year Built (B.S. / A.D.)')
+                ->numeric()
+                ->minValue(1950),
+
+            TextInput::make('structure_type')
+                ->label('Structure System')
+                ->placeholder('RCC Frame / Load Bearing')
+                ->maxLength(100),
+
+            TextInput::make('parking')
+                ->label('Parking Capacity')
+                ->placeholder('2 Cars + 4 Bikes')
+                ->prefixIcon('heroicon-m-truck')
+                ->maxLength(100),
+        ];
+    }
+
+    /**
+     * @return array<int, \Filament\Forms\Components\Field>
+     */
+    public static function locationFields(): array
+    {
+        return [
+            ...LocationSelects::make(
+                province: 'province',
+                district: 'district',
+                municipality: 'municipality',
+                ward: 'ward_no',
+                required: true,
+            ),
+
+            TextInput::make('tole_locality')
+                ->label('Tole / Locality / Landmark')
+                ->prefixIcon('heroicon-m-map-pin')
+                ->columnSpanFull()
+                ->required()
+                ->maxLength(150),
+        ];
+    }
+
+    /**
+     * @return array<int, \Filament\Forms\Components\Field>
+     */
+    public static function financialFields(): array
+    {
+        return [
+            TextInput::make('expected_selling_price')
+                ->label('Expected Selling Price')
+                ->numeric()
+                ->prefix('Rs.')
+                ->minValue(0)
+                ->hint('NPR, negotiable'),
+
+            TextInput::make('rental_amount')
+                ->label('Expected Monthly Rental')
+                ->numeric()
+                ->prefix('Rs.')
+                ->minValue(0)
+                ->hint('NPR / month'),
+        ];
+    }
+
+    /**
+     * @return array<int, \Filament\Forms\Components\Field>
+     */
+    public static function mediaFields(): array
+    {
+        return [
+            FileUpload::make('property_photos')
+                ->label('Property Photographs (तस्विरहरू)')
+                ->multiple()
+                ->reorderable()
+                ->panelLayout('grid')
+                ->image()
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                ->maxFiles(12)
+                ->maxSize(20480)
+                ->disk('public')
+                ->directory('properties/photos')
+                ->openable()
+                ->downloadable()
+                ->imageEditor()
+                ->helperText('JPG, PNG or WebP up to 20 MB each. Add up to 12 — drag to reorder; the first photo becomes the cover.')
+                ->columnSpanFull(),
+        ];
     }
 
     public static function table(Table $table): Table
