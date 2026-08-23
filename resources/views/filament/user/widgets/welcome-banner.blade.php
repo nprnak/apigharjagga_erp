@@ -21,6 +21,16 @@
                         <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;"></span>
                         Account Verified
                     </span>
+                @elseif($status === 'pending')
+                    <span style="display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; border: 1px solid #fde68a; background-color: #fef3c7; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; color: #92400e;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #f59e0b;"></span>
+                        KYC Under Review
+                    </span>
+                @elseif($status === 'rejected')
+                    <span style="display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; border: 1px solid #fecdd3; background-color: #ffe4e6; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; color: #be123c;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #e11d48;"></span>
+                        KYC Action Required
+                    </span>
                 @else
                     <span style="display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; border: 1px solid #fde68a; background-color: #fef3c7; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; color: #92400e;">
                         Account Unverified
@@ -29,17 +39,35 @@
             </div>
 
             <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #475569; line-height: 1.5; max-width: 580px;">
-                Complete your KYC Registration to unlock listing capabilities and connect with buyers.
+                @if($isVerified)
+                    Your account is fully KYC verified. You are authorized to list properties and manage real estate applications.
+                @elseif($status === 'pending')
+                    Your Annex F verification documents have been submitted and are currently being reviewed by our administration. Once approved, you can start listing properties.
+                @elseif($status === 'rejected')
+                    Your KYC submission requires corrections. Please review the admin remarks and resubmit to unlock property listings.
+                @else
+                    Please complete the KYC to list the property and connect with prospective buyers on the marketplace.
+                @endif
             </p>
 
             <div style="margin-top: 0.75rem;">
-                <a href="{{ url('/dashboard/kyc-verification-page') }}"
-                   style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background-color: #2563eb; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #ffffff; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                    <span>Complete KYC Now</span>
-                    <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
+                @if($isVerified)
+                    <a href="{{ url('/dashboard/my-properties/create') }}"
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background-color: #10b981; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #ffffff; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <span>List a Property</span>
+                        <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </a>
+                @else
+                    <a href="{{ url('/dashboard/kyc-verification-page') }}"
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background-color: #2563eb; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #ffffff; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <span>{{ $status === 'pending' ? 'View KYC Status' : ($status === 'rejected' ? 'Review & Fix KYC' : 'Complete KYC Now') }}</span>
+                        <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -49,15 +77,15 @@
                 <div style="width: 50px; height: 50px; min-width: 50px; min-height: 50px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center;">
                     {{ $initials }}
                 </div>
-                <span style="position: absolute; bottom: -2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; background-color: #3b82f6; color: #ffffff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff;">
-                    1
+                <span style="position: absolute; bottom: -2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; background-color: {{ $isVerified ? '#10b981' : '#3b82f6' }}; color: #ffffff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff;">
+                    {{ $isVerified ? '✓' : '!' }}
                 </span>
             </div>
             <div style="margin-top: 0.5rem; text-align: center;">
                 <p style="font-size: 0.875rem; font-weight: 600; color: #0f172a; margin: 0;">{{ $user->name ?? 'User' }}</p>
                 <div style="margin-top: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem; font-size: 0.75rem; color: #64748b;">
-                    <span style="width: 6px; height: 6px; border-radius: 50%; background-color: {{ $isVerified ? '#10b981' : '#94a3b8' }};"></span>
-                    <span>{{ $isVerified ? 'Verified' : 'Unverified' }}</span>
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background-color: {{ $isVerified ? '#10b981' : ($status === 'pending' ? '#f59e0b' : '#94a3b8') }};"></span>
+                    <span>{{ $isVerified ? 'Verified' : ($status === 'pending' ? 'Under Review' : 'Unverified') }}</span>
                 </div>
             </div>
         </div>
