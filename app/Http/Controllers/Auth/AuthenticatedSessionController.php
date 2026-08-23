@@ -41,11 +41,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Log out only the web guard. Using regenerate() (instead of
+        // invalidate()) rotates the session id and CSRF token for security
+        // while preserving any separate admin-panel session in the same
+        // browser, so signing out here does not evict a logged-in admin.
         Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
+        $request->session()->regenerate();
 
         return redirect('/');
     }

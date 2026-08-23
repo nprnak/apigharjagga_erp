@@ -30,6 +30,7 @@ class UserPanelProvider extends PanelProvider
         return $panel
             ->id('user')
             ->path('dashboard')
+            ->authGuard('web')
             ->login()
             ->brandName('API GharJagga')
             ->brandLogo(null)

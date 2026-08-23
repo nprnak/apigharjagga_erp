@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\KycVerificationResource\Pages;
+use App\Filament\Support\LocationSelects;
 use App\Models\KycVerification;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
@@ -69,20 +70,38 @@ class KycVerificationResource extends Resource
             Section::make('Permanent Address')
                 ->columns(2)
                 ->schema([
-                    TextInput::make('permanent_province')->label('Province'),
-                    TextInput::make('permanent_district')->label('District'),
-                    TextInput::make('permanent_municipality')->label('Municipality / VDC'),
-                    TextInput::make('permanent_ward_no')->label('Ward No.'),
+                    ...LocationSelects::make(
+                        province: 'permanent_province',
+                        district: 'permanent_district',
+                        municipality: 'permanent_municipality',
+                        ward: 'permanent_ward_no',
+                        required: false,
+                        labels: [
+                            'province' => 'Province',
+                            'district' => 'District',
+                            'municipality' => 'Municipality / VDC',
+                            'ward' => 'Ward No.',
+                        ],
+                    ),
                     TextInput::make('permanent_tole')->label('Tole / Locality')->columnSpanFull(),
                 ]),
 
             Section::make('Current Address')
                 ->columns(2)
                 ->schema([
-                    TextInput::make('current_province')->label('Province'),
-                    TextInput::make('current_district')->label('District'),
-                    TextInput::make('current_municipality')->label('Municipality / VDC'),
-                    TextInput::make('current_ward_no')->label('Ward No.'),
+                    ...LocationSelects::make(
+                        province: 'current_province',
+                        district: 'current_district',
+                        municipality: 'current_municipality',
+                        ward: 'current_ward_no',
+                        required: false,
+                        labels: [
+                            'province' => 'Province',
+                            'district' => 'District',
+                            'municipality' => 'Municipality / VDC',
+                            'ward' => 'Ward No.',
+                        ],
+                    ),
                     TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
                 ]),
 

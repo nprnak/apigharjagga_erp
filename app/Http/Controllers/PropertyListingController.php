@@ -9,7 +9,9 @@ use App\Models\Property;
 use App\Models\PropertyListing;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -20,9 +22,17 @@ class PropertyListingController extends Controller
     /**
      * Show the property listing application form.
      */
-    public function index(): InertiaResponse
+    public function index(Request $request): InertiaResponse
     {
-        return Inertia::render('PropertyListing/PropertyListingForm');
+        $user = Auth::user();
+        $kycStatus = $user?->kycVerification?->status ?? 'unsubmitted';
+        $isKycVerified = $user ? ($kycStatus === 'approved') : false;
+
+        return Inertia::render('PropertyListing/PropertyListingForm', [
+            'isKycVerified' => $isKycVerified,
+            'kycStatus' => $kycStatus,
+            'isAuthenticated' => Auth::check(),
+        ]);
     }
 
     /**
@@ -31,6 +41,14 @@ class PropertyListingController extends Controller
      */
     public function store(StorePropertyListingRequest $request): JsonResponse
     {
+        $user = Auth::user();
+        if ($user && $user->kycVerification?->status !== 'approved') {
+            return response()->json([
+                'message' => 'Please complete the KYC to list the property.',
+                'kyc_status' => $user->kycVerification?->status ?? 'unsubmitted',
+            ], 403);
+        }
+
         $data = $request->validated();
 
         $listing = DB::transaction(function () use ($data, $request) {

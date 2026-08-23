@@ -9,14 +9,56 @@ use App\Models\PropertyListing;
 use App\Models\PropertyPhoto;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Schemas\Components\Wizard\Step;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class CreateMyProperty extends CreateRecord
 {
+    use CreateRecord\Concerns\HasWizard;
+
     protected static string $resource = MyPropertyResource::class;
 
     protected static ?string $title = 'Submit New Property Listing';
+
+    /**
+     * @return array<int, Step>
+     */
+    protected function getSteps(): array
+    {
+        return [
+            Step::make('Property')
+                ->label('The property')
+                ->description('Type & specifications')
+                ->icon('heroicon-o-home-modern')
+                ->completedIcon('heroicon-m-check')
+                ->columns(2)
+                ->schema(MyPropertyResource::propertyDetailsFields()),
+
+            Step::make('Location')
+                ->label('Where it is')
+                ->description('Administrative address')
+                ->icon('heroicon-o-map')
+                ->completedIcon('heroicon-m-check')
+                ->columns(2)
+                ->schema(MyPropertyResource::locationFields()),
+
+            Step::make('Pricing')
+                ->label('Your price')
+                ->description('Sale or rental expectation')
+                ->icon('heroicon-o-banknotes')
+                ->completedIcon('heroicon-m-check')
+                ->columns(2)
+                ->schema(MyPropertyResource::financialFields()),
+
+            Step::make('Photos')
+                ->label('Add photos')
+                ->description('Show it off — then submit')
+                ->icon('heroicon-o-camera')
+                ->completedIcon('heroicon-m-check')
+                ->schema(MyPropertyResource::mediaFields()),
+        ];
+    }
 
     protected function beforeCreate(): void
     {
@@ -24,7 +66,7 @@ class CreateMyProperty extends CreateRecord
         if ($user?->kycVerification?->status !== 'approved') {
             Notification::make()
                 ->title('KYC Approval Required')
-                ->body('You must have an approved KYC verification before listing a property.')
+                ->body('Please complete the KYC to list the property.')
                 ->danger()
                 ->send();
 

@@ -86,27 +86,16 @@
                 <!-- 2. 4 Stat Cards in 2x2 Grid -->
                 @include('filament.user.widgets.stat-cards-grid')
 
-                <!-- 3. Bottom Row: Chart & Quick Actions -->
-                <div class="dashboard-bottom-row">
-                    <div>
-                        @livewire(\App\Filament\User\Widgets\ListingsStatusChart::class)
-                    </div>
-                    <div>
-                        @include('filament.user.widgets.quick-actions')
-                    </div>
+                <!-- 3. Quick Actions -->
+                <div>
+                    @include('filament.user.widgets.quick-actions')
                 </div>
             </div>
 
             <!-- Right Sidebar Content (1 Column Wide) -->
             <div class="dashboard-col-sidebar">
-                <!-- 4. User Profile Card -->
-                @include('filament.user.widgets.user-profile-card')
-
-                <!-- 5. Interactive KYC Stepper -->
+                <!-- Interactive KYC Stepper -->
                 @include('filament.user.widgets.kyc-progress-stepper')
-
-                <!-- 6. Quick Support Card -->
-                @include('filament.user.widgets.quick-support-card')
             </div>
         </div>
     </div>

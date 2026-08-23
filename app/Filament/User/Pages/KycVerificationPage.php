@@ -3,13 +3,16 @@
 namespace App\Filament\User\Pages;
 
 use App\Models\KycVerification;
+use App\Filament\Support\LocationSelects;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 
@@ -82,28 +85,37 @@ class KycVerificationPage extends Page
             ->statePath('data')
             ->disabled($isLocked)
             ->components([
-                Section::make('1. Personal & Family Information')
-                    ->description('Personal details as registered in official Government IDs')
+                Section::make('Personal & Family Information')
+                    ->description('Enter your details exactly as printed on your government-issued citizenship or National ID.')
+                    ->icon('heroicon-o-user-circle')
+                    ->aside()
                     ->columns(2)
                     ->schema([
                         TextInput::make('full_name')
                             ->label('Full Legal Name')
                             ->required()
-                            ->maxLength(150),
+                            ->maxLength(150)
+                            ->prefixIcon('heroicon-m-user')
+                            ->columnSpanFull(),
                         TextInput::make('father_mother_name')
                             ->label("Father / Mother's Full Name")
                             ->maxLength(150),
                         TextInput::make('spouse_name')
-                            ->label("Spouse's Name (if applicable)")
+                            ->label("Spouse's Name")
+                            ->placeholder('If applicable')
                             ->maxLength(150),
                         TextInput::make('citizenship_no')
                             ->label('Citizenship / National ID Number')
                             ->required()
-                            ->maxLength(50),
+                            ->maxLength(50)
+                            ->prefixIcon('heroicon-m-identification'),
                         DatePicker::make('date_of_birth')
                             ->label('Date of Birth')
                             ->required()
-                            ->maxDate(now()),
+                            ->maxDate(now())
+                            ->native(false)
+                            ->displayFormat('d M Y')
+                            ->prefixIcon('heroicon-m-calendar-days'),
                         Select::make('gender')
                             ->label('Gender')
                             ->options([
@@ -111,51 +123,87 @@ class KycVerificationPage extends Page
                                 'female' => 'Female',
                                 'other' => 'Other',
                             ])
+                            ->native(false)
                             ->required(),
                         TextInput::make('nationality')
                             ->label('Nationality')
                             ->default('Nepali')
                             ->required()
-                            ->maxLength(50),
+                            ->maxLength(50)
+                            ->prefixIcon('heroicon-m-flag'),
                         TextInput::make('occupation')
                             ->label('Profession / Occupation')
-                            ->maxLength(100),
+                            ->maxLength(100)
+                            ->prefixIcon('heroicon-m-briefcase'),
                         TextInput::make('mobile_no')
                             ->label('Primary Mobile Number')
                             ->tel()
                             ->required()
-                            ->maxLength(20),
+                            ->maxLength(20)
+                            ->prefixIcon('heroicon-m-phone'),
                         TextInput::make('email')
                             ->label('Email Address')
                             ->email()
                             ->required()
-                            ->maxLength(150),
+                            ->maxLength(150)
+                            ->prefixIcon('heroicon-m-envelope'),
                     ]),
 
-                Section::make('2. Permanent Residence Address')
-                    ->description('Address as indicated on citizenship certificate')
-                    ->columns(2)
+                Section::make('Residential Addresses')
+                    ->description('Your permanent address must match your citizenship certificate. Use the Current tab if you reside elsewhere.')
+                    ->icon('heroicon-o-map-pin')
+                    ->aside()
                     ->schema([
-                        TextInput::make('permanent_province')->label('Province')->required(),
-                        TextInput::make('permanent_district')->label('District')->required(),
-                        TextInput::make('permanent_municipality')->label('Municipality / Rural Municipality')->required(),
-                        TextInput::make('permanent_ward_no')->label('Ward Number')->required(),
-                        TextInput::make('permanent_tole')->label('Tole / Locality / Landmark')->columnSpanFull()->required(),
+                        Tabs::make('addresses')
+                            ->contained(false)
+                            ->schema([
+                                Tabs\Tab::make('Permanent')
+                                    ->icon('heroicon-m-home-modern')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            ...LocationSelects::make(
+                                                province: 'permanent_province',
+                                                district: 'permanent_district',
+                                                municipality: 'permanent_municipality',
+                                                ward: 'permanent_ward_no',
+                                                required: true,
+                                                labels: [
+                                                    'province' => 'Province',
+                                                    'district' => 'District',
+                                                    'municipality' => 'Municipality / Rural Municipality',
+                                                    'ward' => 'Ward Number',
+                                                ],
+                                            ),
+                                            TextInput::make('permanent_tole')->label('Tole / Locality / Landmark')->columnSpanFull()->required(),
+                                        ]),
+                                    ]),
+                                Tabs\Tab::make('Current / Temporary')
+                                    ->icon('heroicon-m-map')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            ...LocationSelects::make(
+                                                province: 'current_province',
+                                                district: 'current_district',
+                                                municipality: 'current_municipality',
+                                                ward: 'current_ward_no',
+                                                required: false,
+                                                labels: [
+                                                    'province' => 'Province',
+                                                    'district' => 'District',
+                                                    'municipality' => 'Municipality / Rural Municipality',
+                                                    'ward' => 'Ward Number',
+                                                ],
+                                            ),
+                                            TextInput::make('current_tole')->label('Tole / Locality / Landmark')->columnSpanFull(),
+                                        ]),
+                                    ]),
+                            ]),
                     ]),
 
-                Section::make('3. Current / Temporary Address')
-                    ->description('Present residential address for correspondence')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('current_province')->label('Province'),
-                        TextInput::make('current_district')->label('District'),
-                        TextInput::make('current_municipality')->label('Municipality / Rural Municipality'),
-                        TextInput::make('current_ward_no')->label('Ward Number'),
-                        TextInput::make('current_tole')->label('Tole / Locality / Landmark')->columnSpanFull(),
-                    ]),
-
-                Section::make('4. Passport-Size Photograph & Official Identity Document')
-                    ->description('Upload an official passport-size (PP) photo of the applicant along with clear government-issued ID documentation')
+                Section::make('Photograph & Identity Document')
+                    ->description('Upload a passport-size photo and a clear scan of your official ID. Accepted: JPG, PNG, WebP up to 20 MB.')
+                    ->icon('heroicon-o-camera')
+                    ->aside()
                     ->columns(2)
                     ->schema([
                         FileUpload::make('selfie_photo_path')
@@ -174,7 +222,7 @@ class KycVerificationPage extends Page
                             ->required()
                             ->openable()
                             ->downloadable()
-                            ->helperText('Please upload a clear front-facing passport-size (PP) photo of the applicant against a plain or light background (Max: 20MB).')
+                            ->helperText('Front-facing passport-size (PP) photo against a plain or light background (Max: 20MB).')
                             ->columnSpanFull(),
                         Select::make('id_type')
                             ->label('Government Document Type')
@@ -184,6 +232,8 @@ class KycVerificationPage extends Page
                                 'passport' => 'Passport',
                                 'driving_license' => 'Driving License',
                             ])
+                            ->native(false)
+                            ->prefixIcon('heroicon-m-document-check')
                             ->required(),
                         FileUpload::make('id_document_path')
                             ->label('Identity Document Photo / Scanned Copy')

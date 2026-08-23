@@ -18,10 +18,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RolesSeeder::class,                // roles (no dependencies)
-            DocumentTypesSeeder::class,         // document_types (no dependencies)
-            PropertyFeatureTypesSeeder::class,  // property_feature_types (no dependencies)
-            ServiceTypesSeeder::class,          // service_types (no dependencies)
+            ProvinceSeeder::class,              // provinces → districts → municipalities → wards (no dependencies)
+            RolesSeeder::class,                 // roles (no dependencies)
+            DocumentTypesSeeder::class,          // document_types (no dependencies)
+            PropertyFeatureTypesSeeder::class,   // property_feature_types (no dependencies)
+            ServiceTypesSeeder::class,           // service_types (no dependencies)
         ]);
     }
 }
