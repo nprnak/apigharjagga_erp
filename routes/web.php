@@ -47,7 +47,7 @@ Route::middleware('auth')->get('/user/dashboard', function (Request $request) {
     return redirect($target);
 })->name('dashboard');
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth:admin', 'admin'])->group(function () {
     Route::post('/admin/approve', [AdminApprovalController::class, 'approve'])->name('admin.approve');
     Route::post('/admin/reject', [AdminApprovalController::class, 'reject'])->name('admin.reject');
 });
