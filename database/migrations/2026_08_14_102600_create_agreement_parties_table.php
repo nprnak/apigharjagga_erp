@@ -69,14 +69,16 @@ return new class extends Migration
         //                any other role          → client_id must be provided.
         // Cannot be expressed via Laravel's schema builder — using raw DDL.
         // -----------------------------------------------------------------------
-        DB::statement(
-            "ALTER TABLE `agreement_parties`
-             ADD CONSTRAINT `chk_agreement_parties_role_entity`
-             CHECK (
-                 (`party_role` = 'company' AND `company_id` IS NOT NULL)
-                 OR (`party_role` <> 'company' AND `client_id` IS NOT NULL)
-             )"
-        );
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                "ALTER TABLE `agreement_parties`
+                 ADD CONSTRAINT `chk_agreement_parties_role_entity`
+                 CHECK (
+                     (`party_role` = 'company' AND `company_id` IS NOT NULL)
+                     OR (`party_role` <> 'company' AND `client_id` IS NOT NULL)
+                 )"
+            );
+        }
     }
 
     /**

@@ -101,26 +101,22 @@ return new class extends Migration
         // CHECK #1 — MySQL 8.0.16+ native CHECK enforcement.
         // Business rule: payment amount must always be positive.
         // -----------------------------------------------------------------------
-        DB::statement(
-            "ALTER TABLE `payment_receipts`
-             ADD CONSTRAINT `chk_payment_receipts_amount_positive`
-             CHECK (`amount` > 0)"
-        );
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                "ALTER TABLE `payment_receipts`
+                 ADD CONSTRAINT `chk_payment_receipts_amount_positive`
+                 CHECK (`amount` > 0)"
+            );
 
-        // -----------------------------------------------------------------------
-        // CHECK #2 — MySQL 8.0.16+ native CHECK enforcement.
-        // Business rule: cheque payments must provide cheque_no AND bank_name;
-        //                cash payments have no such requirement.
-        // Cannot be expressed via Laravel's schema builder — using raw DDL.
-        // -----------------------------------------------------------------------
-        DB::statement(
-            "ALTER TABLE `payment_receipts`
-             ADD CONSTRAINT `chk_payment_receipts_cheque_fields`
-             CHECK (
-                 `mode_of_payment` = 'cash'
-                 OR (`cheque_no` IS NOT NULL AND `bank_name` IS NOT NULL)
-             )"
-        );
+            DB::statement(
+                "ALTER TABLE `payment_receipts`
+                 ADD CONSTRAINT `chk_payment_receipts_cheque_fields`
+                 CHECK (
+                     `mode_of_payment` = 'cash'
+                     OR (`cheque_no` IS NOT NULL AND `bank_name` IS NOT NULL)
+                 )"
+            );
+        }
     }
 
     /**

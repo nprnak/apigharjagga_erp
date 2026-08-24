@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        \App\Models\KycVerification::observe(\App\Observers\KycVerificationObserver::class);
     }
 
     /**
