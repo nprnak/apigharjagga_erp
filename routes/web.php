@@ -13,6 +13,7 @@ use App\Http\Controllers\PropertyListingController;
 use App\Http\Controllers\ValuationRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
 
@@ -43,6 +44,12 @@ Route::middleware('auth')->get('/user/dashboard', function (Request $request) {
         'listings' => '/dashboard/my-properties',
         default => '/dashboard',
     };
+
+    // Filament is not an Inertia app. An Inertia visit to this URL would
+    // open the panel HTML in Inertia v3's floating error <dialog>.
+    if ($request->header('X-Inertia')) {
+        return Inertia::location(url($target));
+    }
 
     return redirect($target);
 })->name('dashboard');

@@ -31,7 +31,7 @@ const initials = computed(() => {
 
                     <!-- Left: Logo + Nav links -->
                     <div class="flex items-center gap-8">
-                        <Link :href="route('dashboard')" class="flex items-center gap-2.5 group">
+                        <a href="/dashboard" class="flex items-center gap-2.5 group">
                             <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center group-hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/30">
                                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -39,11 +39,11 @@ const initials = computed(() => {
                                 </svg>
                             </div>
                             <span class="font-bold text-white text-sm tracking-tight hidden sm:block">API GharJagga</span>
-                        </Link>
+                        </a>
 
                         <div class="hidden sm:flex items-center gap-1">
-                            <Link
-                                :href="route('dashboard')"
+                            <a
+                                href="/dashboard"
                                 :class="[
                                     'rounded-lg px-3 py-2 text-sm font-medium transition-all',
                                     route().current('dashboard')
@@ -52,7 +52,7 @@ const initials = computed(() => {
                                 ]"
                             >
                                 Dashboard
-                            </Link>
+                            </a>
                             <Link
                                 :href="route('properties.index')"
                                 :class="[
@@ -178,7 +178,7 @@ const initials = computed(() => {
                 leave-to-class="opacity-0"
             >
                 <div v-if="showingNavigationDropdown" class="sm:hidden border-t border-white/10 bg-slate-900 px-4 py-3 space-y-1">
-                    <Link :href="route('dashboard')" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition">Dashboard</Link>
+                    <a href="/dashboard" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition">Dashboard</a>
                     <Link :href="route('properties.index')" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition">Browse Properties</Link>
                     <Link :href="route('profile.edit')" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition">Profile</Link>
                     <a v-if="isAdmin" href="/admin" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-amber-400 hover:bg-amber-400/5 transition">Admin Panel</a>
