@@ -83,7 +83,7 @@ class CreateMyProperty extends CreateRecord
         if ($user?->kycVerification?->status !== 'approved') {
             Notification::make()
                 ->title('KYC Approval Required')
-                ->body('You must have an approved KYC verification before listing a property.')
+                ->body('Please complete the KYC to list the property.')
                 ->danger()
                 ->send();
 

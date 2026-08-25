@@ -1,5 +1,6 @@
 @php
     $kycStatus = auth()->user()?->kycVerification?->status ?? 'unsubmitted';
+    $isVerified = $kycStatus === 'approved';
 @endphp
 
 <div class="dash-card" style="height: 100%;">
@@ -20,7 +21,7 @@
                 </div>
                 <h4 style="margin-top: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #0f172a; line-height: 1.2;">KYC Verification</h4>
                 <p style="margin-top: 0.25rem; font-size: 0.65rem; color: #64748b; line-height: 1.2;">
-                    {{ $kycStatus === 'approved' ? 'Verified' : 'Complete Annex F' }}
+                    {{ $isVerified ? 'Fully Verified' : ($kycStatus === 'pending' ? 'Under Review' : 'Complete Annex F') }}
                 </p>
             </div>
             <span style="margin-top: 0.5rem; font-size: 0.65rem; font-weight: 600; color: #2563eb; display: inline-flex; align-items: center; gap: 2px;">
@@ -45,20 +46,28 @@
             </span>
         </a>
 
-        <!-- 3. Add Property -->
-        <a href="{{ url('/property-listing') }}"
+        <!-- 3. Add Property (Guarded by KYC) -->
+        <a href="{{ $isVerified ? url('/dashboard/my-properties/create') : url('/dashboard/kyc-verification-page') }}"
            style="display: flex; flex-direction: column; justify-content: space-between; border-radius: 0.75rem; border: 1px solid #f1f5f9; background-color: #f8fafc; padding: 0.875rem; text-decoration: none; transition: all 0.2s;">
             <div>
-                <div style="width: 32px; height: 32px; border-radius: 0.5rem; background-color: #e0e7ff; color: #4f46e5; display: flex; align-items: center; justify-content: center;">
-                    <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
+                <div style="width: 32px; height: 32px; border-radius: 0.5rem; background-color: {{ $isVerified ? '#e0e7ff' : '#fee2e2' }}; color: {{ $isVerified ? '#4f46e5' : '#dc2626' }}; display: flex; align-items: center; justify-content: center;">
+                    @if($isVerified)
+                        <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    @else
+                        <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    @endif
                 </div>
-                <h4 style="margin-top: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #0f172a; line-height: 1.2;">Add Property</h4>
-                <p style="margin-top: 0.25rem; font-size: 0.65rem; color: #64748b; line-height: 1.2;">Public marketplace</p>
+                <h4 style="margin-top: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #0f172a; line-height: 1.2;">List Property</h4>
+                <p style="margin-top: 0.25rem; font-size: 0.65rem; color: {{ $isVerified ? '#64748b' : '#dc2626' }}; line-height: 1.2;">
+                    {{ $isVerified ? 'Submit new listing' : 'KYC Required to list' }}
+                </p>
             </div>
-            <span style="margin-top: 0.5rem; font-size: 0.65rem; font-weight: 600; color: #4f46e5; display: inline-flex; align-items: center; gap: 2px;">
-                Create &rarr;
+            <span style="margin-top: 0.5rem; font-size: 0.65rem; font-weight: 600; color: {{ $isVerified ? '#4f46e5' : '#dc2626' }}; display: inline-flex; align-items: center; gap: 2px;">
+                {{ $isVerified ? 'Create →' : 'Verify KYC →' }}
             </span>
         </a>
 

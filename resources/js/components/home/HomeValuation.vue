@@ -3,11 +3,60 @@ import { ref } from 'vue';
 
 const address = ref<string>('');
 const showEstimate = ref<boolean>(false);
+const estimateValue = ref<string>('');
 
-const MOCK_ESTIMATE = 'Rs. 4,75,00,000';
+const LOCATION_BASE_PRICES: Record<string, number> = {
+    kathmandu: 85000000,
+    lalitpur: 75000000,
+    pokhara: 55000000,
+    bhaktapur: 45000000,
+    biratnagar: 40000000,
+    bharatpur: 38000000,
+    birgunj: 35000000,
+    dharan: 32000000,
+    hetauda: 30000000,
+    butwal: 28000000,
+    nepalgunj: 25000000,
+    dhangadhi: 24000000,
+    janakpur: 23000000,
+    itahari: 22000000,
+};
+
+const DEFAULT_BASE_PRICE = 35000000;
+
+function hashAddress(input: string): number {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+        hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+}
+
+function findLocationBase(addressInput: string): number {
+    const normalized = addressInput.toLowerCase();
+    for (const [location, base] of Object.entries(LOCATION_BASE_PRICES)) {
+        if (normalized.includes(location)) {
+            return base;
+        }
+    }
+    return DEFAULT_BASE_PRICE;
+}
+
+function formatEstimate(amount: number): string {
+    return 'Rs. ' + new Intl.NumberFormat('en-IN').format(amount);
+}
+
+function computeEstimate(addressInput: string): string {
+    const trimmed = addressInput.trim();
+    const base = findLocationBase(trimmed);
+    const variation = 0.85 + (hashAddress(trimmed) % 31) / 100;
+    const amount = Math.round((base * variation) / 100000) * 100000;
+    return formatEstimate(amount);
+}
 
 function estimate() {
     if (address.value.trim() === '') return;
+    estimateValue.value = computeEstimate(address.value);
     showEstimate.value = true;
 }
 </script>
@@ -51,7 +100,7 @@ function estimate() {
                     class="absolute bottom-10 left-1/2 w-[85%] max-w-xs -translate-x-1/2 rounded-xl bg-white px-6 py-5 text-center shadow-xl"
                 >
                     <p class="text-sm font-medium text-slate-800">Your estimate is in!</p>
-                    <p class="mt-1 text-3xl font-bold text-brand-600">{{ MOCK_ESTIMATE }}</p>
+                    <p class="mt-1 text-3xl font-bold text-brand-600">{{ estimateValue }}</p>
                     <div class="mt-4 flex justify-center">
                         <span
                             class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-white shadow-md"

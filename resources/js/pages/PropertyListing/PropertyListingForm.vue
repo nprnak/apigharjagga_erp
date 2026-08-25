@@ -1237,6 +1237,19 @@ import axios from 'axios';
 import FormField from '../../components/FormField.vue';
 import SignatureUpload from '../../components/SignatureUpload.vue';
 
+const props = withDefaults(
+    defineProps<{
+        isKycVerified?: boolean;
+        kycStatus?: string;
+        isAuthenticated?: boolean;
+    }>(),
+    {
+        isKycVerified: false,
+        kycStatus: 'unsubmitted',
+        isAuthenticated: false,
+    }
+);
+
 // ── Form State ─────────────────────────────────────────────────────────────
 const emptyForm = () => ({
     // Applicant Details
@@ -1568,6 +1581,12 @@ function prevStep() {
 }
 
 async function handleNextOrSubmit() {
+    if (props.isAuthenticated && !props.isKycVerified) {
+        alert('Please complete the KYC to list the property.');
+        window.location.href = '/dashboard/kyc-verification-page';
+        return;
+    }
+
     if (!validateCurrentStep()) return;
 
     if (currentStep.value < steps.length - 1) {
@@ -1582,6 +1601,12 @@ async function handleNextOrSubmit() {
 }
 
 async function submitForm() {
+    if (props.isAuthenticated && !props.isKycVerified) {
+        alert('Please complete the KYC to list the property.');
+        window.location.href = '/dashboard/kyc-verification-page';
+        return;
+    }
+
     submitting.value = true;
     try {
         const csrfToken = (
@@ -1597,6 +1622,11 @@ async function submitForm() {
         submitted.value = true;
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
+        if (err.response?.status === 403) {
+            alert(err.response.data.message || 'Please complete the KYC to list the property.');
+            window.location.href = '/dashboard/kyc-verification-page';
+            return;
+        }
         if (err.response?.status === 422) {
             const fieldErrors = err.response.data.errors;
             Object.entries(fieldErrors).forEach(([key, msgs]) => {
