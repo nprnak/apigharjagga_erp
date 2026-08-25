@@ -14,6 +14,8 @@ class EditProperty extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            PropertyResource::approveAction(),
+            PropertyResource::rejectAction(),
             Actions\DeleteAction::make(),
         ];
     }

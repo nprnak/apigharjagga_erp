@@ -8,6 +8,7 @@ use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -46,7 +47,33 @@ class PropertyResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Property Details')
+            // Review & visibility come first — this is what an admin opens the
+            // record for, so it must be visible without scrolling.
+            Section::make('Review & Visibility')
+                ->columns(3)
+                ->schema([
+                    Select::make('approval_status')
+                        ->label('Approval Status')
+                        ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
+                        ->required()
+                        ->native(false),
+                    Select::make('status')
+                        ->label('Property Status')
+                        ->options([
+                            'draft' => 'Draft', 'listed' => 'Listed', 'under_verification' => 'Under Verification',
+                            'under_valuation' => 'Under Valuation', 'under_negotiation' => 'Under Negotiation',
+                            'sold' => 'Sold', 'rented' => 'Rented', 'leased' => 'Leased',
+                            'withdrawn' => 'Withdrawn', 'rejected' => 'Rejected',
+                        ])
+                        ->native(false),
+                    Toggle::make('is_listed')
+                        ->label('Show on Marketplace')
+                        ->helperText('When off, this property is hidden from the public site and user listings.')
+                        ->onColor('success')
+                        ->offColor('danger'),
+                ]),
+
+            Section::make('Basic Info')
                 ->columns(2)
                 ->schema([
                     TextInput::make('property_code')->label('Property Code')->disabled(),
@@ -56,21 +83,17 @@ class PropertyResource extends Resource
                             'commercial_building' => 'Commercial Building', 'office_space' => 'Office Space',
                             'industrial_property' => 'Industrial Property', 'agricultural_land' => 'Agricultural Land',
                             'other' => 'Other',
-                        ]),
-                    Select::make('approval_status')
-                        ->label('Approval Status')
-                        ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
-                        ->required(),
-                    Select::make('status')
-                        ->options([
-                            'draft' => 'Draft', 'listed' => 'Listed', 'under_verification' => 'Under Verification',
-                            'under_valuation' => 'Under Valuation', 'under_negotiation' => 'Under Negotiation',
-                            'sold' => 'Sold', 'rented' => 'Rented', 'leased' => 'Leased',
-                            'withdrawn' => 'Withdrawn', 'rejected' => 'Rejected',
-                        ]),
-                    TextInput::make('kitta_no')->label('Kitta No.'),
+                        ])
+                        ->native(false),
                     TextInput::make('area')->label('Land Area'),
                     TextInput::make('covered_area')->label('Covered Area'),
+                ]),
+
+            Section::make('Additional Details')
+                ->columns(2)
+                ->collapsed()
+                ->schema([
+                    TextInput::make('kitta_no')->label('Kitta No.'),
                     TextInput::make('no_of_floors')->label('No. of Floors')->numeric(),
                     TextInput::make('year_of_construction')->label('Year Built')->numeric(),
                     TextInput::make('facing_direction')->label('Facing Direction'),
@@ -78,6 +101,7 @@ class PropertyResource extends Resource
 
             Section::make('Property Photographs & Media')
                 ->description('Attached property photographs')
+                ->collapsed()
                 ->schema([
                     FileUpload::make('property_photos')
                         ->label('Photographs')
@@ -91,6 +115,42 @@ class PropertyResource extends Resource
                         ->columnSpanFull(),
                 ]),
         ]);
+    }
+
+    public static function approveAction(): Actions\Action
+    {
+        return Actions\Action::make('approve')
+            ->label('Approve')
+            ->icon('heroicon-o-check-circle')
+            ->color('success')
+            ->requiresConfirmation()
+            ->hidden(fn (Property $record) => $record->approval_status === 'approved')
+            ->action(function (Property $record) {
+                $record->update([
+                    'approval_status' => 'approved',
+                    'status' => 'listed',
+                    'is_listed' => true,
+                ]);
+                Notification::make()->title('Property approved & listed')->success()->send();
+            });
+    }
+
+    public static function rejectAction(): Actions\Action
+    {
+        return Actions\Action::make('reject')
+            ->label('Reject')
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->hidden(fn (Property $record) => $record->approval_status === 'rejected')
+            ->action(function (Property $record) {
+                $record->update([
+                    'approval_status' => 'rejected',
+                    'status' => 'rejected',
+                    'is_listed' => false,
+                ]);
+                Notification::make()->title('Property rejected')->danger()->send();
+            });
     }
 
     public static function table(Table $table): Table
@@ -138,6 +198,16 @@ class PropertyResource extends Resource
                         'rejected', 'withdrawn' => 'danger',
                         default => 'warning',
                     }),
+                Tables\Columns\ToggleColumn::make('is_listed')
+                    ->label('On Site')
+                    ->onColor('success')
+                    ->offColor('danger')
+                    ->afterStateUpdated(function (Property $record, bool $state) {
+                        Notification::make()
+                            ->title($state ? 'Property is now visible on the marketplace' : 'Property hidden from the marketplace')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Listed')
                     ->dateTime('d M Y')
@@ -155,26 +225,8 @@ class PropertyResource extends Resource
                     ]),
             ])
             ->actions([
-                Actions\Action::make('approve')
-                    ->label('Approve')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->hidden(fn (Property $record) => $record->approval_status === 'approved')
-                    ->action(function (Property $record) {
-                        $record->update(['approval_status' => 'approved', 'status' => 'listed']);
-                        Notification::make()->title('Property approved & listed')->success()->send();
-                    }),
-                Actions\Action::make('reject')
-                    ->label('Reject')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->hidden(fn (Property $record) => $record->approval_status === 'rejected')
-                    ->action(function (Property $record) {
-                        $record->update(['approval_status' => 'rejected', 'status' => 'rejected']);
-                        Notification::make()->title('Property rejected')->danger()->send();
-                    }),
+                static::approveAction(),
+                static::rejectAction(),
                 Actions\EditAction::make(),
             ])
             ->bulkActions([
