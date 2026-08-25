@@ -1,4 +1,4 @@
-<script setup lang="ts">
+image.png<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import type { Listing } from '../../types/marketplace';
 import { computed } from 'vue';

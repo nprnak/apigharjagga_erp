@@ -40,11 +40,13 @@ class Property extends Model
         'current_building_condition',
         'status',
         'approval_status',
+        'is_listed',
     ];
 
     protected $casts = [
         'year_of_construction' => 'integer',
         'no_of_floors'         => 'integer',
+        'is_listed'            => 'boolean',
     ];
 
     public function owner(): BelongsTo

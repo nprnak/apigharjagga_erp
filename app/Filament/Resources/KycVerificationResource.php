@@ -9,11 +9,13 @@ use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -51,98 +53,140 @@ class KycVerificationResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Personal Information')
-                ->columns(2)
-                ->schema([
-                    TextInput::make('full_name')->label('Full Name')->maxLength(150),
-                    TextInput::make('father_mother_name')->label("Father / Mother Name")->maxLength(150),
-                    TextInput::make('spouse_name')->label('Spouse Name')->maxLength(150),
-                    TextInput::make('citizenship_no')->label('Citizenship No.')->maxLength(50),
-                    DatePicker::make('date_of_birth')->label('Date of Birth'),
-                    Select::make('gender')->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other']),
-                    TextInput::make('nationality')->default('Nepali')->maxLength(50),
-                    TextInput::make('occupation')->maxLength(100),
-                    TextInput::make('mobile_no')->label('Mobile No.')->tel()->maxLength(20),
-                    TextInput::make('email')->email()->maxLength(150),
-                ]),
+        // Two-column workspace on large screens: applicant details on the left,
+        // the ID documents and submission meta the reviewer needs alongside them
+        // on the right. Collapses to a single stacked column below `lg`.
+        return $schema
+            ->columns(['default' => 1, 'lg' => 3])
+            ->components([
+                // The decision band sits full-width above the fold — it is why
+                // an admin opens the record.
+                Section::make('Review Decision')
+                    ->description('Set the verification outcome. The note is shown to the user when rejected.')
+                    ->icon('heroicon-o-shield-check')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->schema([
+                        Select::make('status')
+                            ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
+                            ->required()
+                            ->native(false),
+                        Textarea::make('admin_note')
+                            ->label('Admin Note (shown to user if rejected)')
+                            ->rows(2)
+                            ->columnSpan(2),
+                    ]),
 
-            Section::make('Permanent Address')
-                ->columns(2)
-                ->schema([
-                    ...LocationSelects::make(
-                        province: 'permanent_province',
-                        district: 'permanent_district',
-                        municipality: 'permanent_municipality',
-                        ward: 'permanent_ward_no',
-                        required: false,
-                        labels: [
-                            'province' => 'Province',
-                            'district' => 'District',
-                            'municipality' => 'Municipality / VDC',
-                            'ward' => 'Ward No.',
-                        ],
-                    ),
-                    TextInput::make('permanent_tole')->label('Tole / Locality')->columnSpanFull(),
-                ]),
+                // ---- Applicant details, main column -----------------------
+                Group::make()
+                    ->columnSpan(['default' => 1, 'lg' => 2])
+                    ->schema([
+                        Section::make('Personal Information')
+                            ->icon('heroicon-o-user')
+                            ->columns(2)
+                            ->schema([
+                                TextInput::make('full_name')->label('Full Name')->maxLength(150),
+                                TextInput::make('father_mother_name')->label('Father / Mother Name')->maxLength(150),
+                                TextInput::make('spouse_name')->label('Spouse Name')->maxLength(150),
+                                TextInput::make('citizenship_no')->label('Citizenship No.')->maxLength(50),
+                                DatePicker::make('date_of_birth')->label('Date of Birth'),
+                                Select::make('gender')->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])->native(false),
+                                TextInput::make('nationality')->default('Nepali')->maxLength(50),
+                                TextInput::make('occupation')->maxLength(100),
+                                TextInput::make('mobile_no')->label('Mobile No.')->tel()->maxLength(20),
+                                TextInput::make('email')->email()->maxLength(150),
+                            ]),
 
-            Section::make('Current Address')
-                ->columns(2)
-                ->schema([
-                    ...LocationSelects::make(
-                        province: 'current_province',
-                        district: 'current_district',
-                        municipality: 'current_municipality',
-                        ward: 'current_ward_no',
-                        required: false,
-                        labels: [
-                            'province' => 'Province',
-                            'district' => 'District',
-                            'municipality' => 'Municipality / VDC',
-                            'ward' => 'Ward No.',
-                        ],
-                    ),
-                    TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
-                ]),
+                        Section::make('Permanent Address')
+                            ->icon('heroicon-o-map-pin')
+                            ->columns(2)
+                            ->collapsible()
+                            ->schema([
+                                ...LocationSelects::make(
+                                    province: 'permanent_province',
+                                    district: 'permanent_district',
+                                    municipality: 'permanent_municipality',
+                                    ward: 'permanent_ward_no',
+                                    required: false,
+                                    labels: [
+                                        'province' => 'Province',
+                                        'district' => 'District',
+                                        'municipality' => 'Municipality / VDC',
+                                        'ward' => 'Ward No.',
+                                    ],
+                                ),
+                                TextInput::make('permanent_tole')->label('Tole / Locality')->columnSpanFull(),
+                            ]),
 
-            Section::make('Passport-Size Photo & ID Documents')
-                ->columns(2)
-                ->schema([
-                    FileUpload::make('selfie_photo_path')
-                        ->label('Passport-Size Photo (PP Photo)')
-                        ->image()
-                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
-                        ->maxSize(20480)
-                        ->disk('public')
-                        ->openable()
-                        ->downloadable(),
-                    FileUpload::make('id_document_path')
-                        ->label('Identity Document (Citizenship/NID/Passport)')
-                        ->image()
-                        ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
-                        ->maxSize(20480)
-                        ->disk('public')
-                        ->openable()
-                        ->downloadable(),
-                    Select::make('id_type')
-                        ->label('ID Type')
-                        ->options([
-                            'citizenship'     => 'Citizenship Card',
-                            'national_id'     => 'National ID',
-                            'passport'        => 'Passport',
-                            'driving_license' => 'Driving License',
-                        ]),
-                    Select::make('status')
-                        ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
-                        ->required(),
-                    Textarea::make('admin_note')
-                        ->label('Admin Note (shown to user if rejected)')
-                        ->rows(3)
-                        ->columnSpanFull(),
-                    DateTimePicker::make('submitted_at')->label('Submitted At')->disabled(),
-                    DateTimePicker::make('reviewed_at')->label('Reviewed At')->disabled(),
-                ]),
-        ]);
+                        Section::make('Current Address')
+                            ->icon('heroicon-o-map')
+                            ->columns(2)
+                            ->collapsible()
+                            ->schema([
+                                ...LocationSelects::make(
+                                    province: 'current_province',
+                                    district: 'current_district',
+                                    municipality: 'current_municipality',
+                                    ward: 'current_ward_no',
+                                    required: false,
+                                    labels: [
+                                        'province' => 'Province',
+                                        'district' => 'District',
+                                        'municipality' => 'Municipality / VDC',
+                                        'ward' => 'Ward No.',
+                                    ],
+                                ),
+                                TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
+                            ]),
+                    ]),
+
+                // ---- Documents + submission meta, sidebar -----------------
+                Group::make()
+                    ->columnSpan(['default' => 1, 'lg' => 1])
+                    ->schema([
+                        Section::make('Identity Documents')
+                            ->icon('heroicon-o-identification')
+                            ->schema([
+                                Select::make('id_type')
+                                    ->label('ID Type')
+                                    ->options([
+                                        'citizenship'     => 'Citizenship Card',
+                                        'national_id'     => 'National ID',
+                                        'passport'        => 'Passport',
+                                        'driving_license' => 'Driving License',
+                                    ])
+                                    ->native(false),
+                                FileUpload::make('selfie_photo_path')
+                                    ->label('Passport-Size Photo (PP Photo)')
+                                    ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                                    ->maxSize(20480)
+                                    ->disk('public')
+                                    ->openable()
+                                    ->downloadable(),
+                                FileUpload::make('id_document_path')
+                                    ->label('Identity Document (Citizenship/NID/Passport)')
+                                    ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                                    ->maxSize(20480)
+                                    ->disk('public')
+                                    ->openable()
+                                    ->downloadable(),
+                            ]),
+
+                        Section::make('Submission')
+                            ->icon('heroicon-o-clock')
+                            ->schema([
+                                Placeholder::make('user_account')
+                                    ->label('User Account')
+                                    ->content(fn (?KycVerification $record) => $record?->user
+                                        ? collect([$record->user->name, $record->user->email])->filter()->implode(' · ') ?: '—'
+                                        : '—'),
+                                DateTimePicker::make('submitted_at')->label('Submitted At')->disabled(),
+                                DateTimePicker::make('reviewed_at')->label('Reviewed At')->disabled(),
+                            ]),
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table

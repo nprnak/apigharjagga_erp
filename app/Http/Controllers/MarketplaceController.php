@@ -79,6 +79,10 @@ class MarketplaceController extends Controller
      * Base query for listings that are safe to expose on the public marketplace
      * (used by the featured carousel, the search grid, and the detail page so
      * that a raw listing/property ID can't be guessed to view a hidden record).
+     *
+     * `is_listed` is an explicit admin-controlled switch (Admin Panel →
+     * Properties) independent of approval/status — a property can be
+     * approved yet hidden from the site, or vice versa.
      */
     private function visibleListingsQuery()
     {
@@ -89,8 +93,11 @@ class MarketplaceController extends Controller
                     ->orWhere('listing_status', 'listed');
             })
             ->whereHas('property', function ($q) {
-                $q->whereIn('approval_status', ['approved', 'pending'])
-                    ->orWhereIn('status', ['listed', 'draft']);
+                $q->where('is_listed', true)
+                    ->where(function ($q2) {
+                        $q2->whereIn('approval_status', ['approved', 'pending'])
+                            ->orWhereIn('status', ['listed', 'draft']);
+                    });
             });
     }
 
