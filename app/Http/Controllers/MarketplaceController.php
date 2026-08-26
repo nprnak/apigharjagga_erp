@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Property;
 use App\Models\PropertyListing;
+use App\Models\Province;
+use App\Models\District;
+use App\Models\Municipality;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -151,6 +154,64 @@ class MarketplaceController extends Controller
             ->all();
     }
 
+    /**
+     * Typeahead location suggestions for the homepage search box.
+     * Returns place names (district / municipality / province) that start with
+     * the typed text, e.g. "ka" -> Kailali, Kaski, Kathmandu ... so the user
+     * can search by a real address instead of guessing spellings.
+     */
+    public function suggestLocations(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $like = $q . '%';
+
+        $districts = District::query()
+            ->where('name', 'like', $like)
+            ->orderBy('name')
+            ->limit(8)
+            ->pluck('name')
+            ->map(fn ($n) => ['label' => $n, 'type' => 'District']);
+
+        $municipalities = Municipality::query()
+            ->where('name', 'like', $like)
+            ->orderBy('name')
+            ->limit(8)
+            ->pluck('name')
+            ->map(fn ($n) => ['label' => $n, 'type' => 'Municipality']);
+
+        $provinces = Province::query()
+            ->where('name', 'like', $like)
+            ->orderBy('name')
+            ->limit(4)
+            ->pluck('name')
+            ->map(fn ($n) => ['label' => $n, 'type' => 'Province']);
+
+        // Districts first (most-searched), dedupe by name, cap at 8.
+        $seen = [];
+        $suggestions = collect()
+            ->concat($districts)
+            ->concat($municipalities)
+            ->concat($provinces)
+            ->filter(function ($item) use (&$seen) {
+                $key = mb_strtolower($item['label']);
+                if (isset($seen[$key])) {
+                    return false;
+                }
+                $seen[$key] = true;
+
+                return true;
+            })
+            ->take(8)
+            ->values();
+
+        return response()->json($suggestions);
+    }
+
     public function index(Request $request): InertiaResponse
     {
         $listings = $this->queryListings($request, limit: 24)->get();
@@ -220,13 +281,23 @@ class MarketplaceController extends Controller
         }
 
         if ($q !== '') {
-            $query->where(function ($q2) use ($q) {
-                $q2->where('application_no', 'like', '%' . $q . '%')
-                    ->orWhereHas('property', function ($p) use ($q) {
-                        $p->where('property_code', 'like', '%' . $q . '%');
+            // Free-text address search: match any part of the address
+            // (province / district / municipality / ward / tole / full text)
+            // as well as the listing and property reference codes.
+            $like = '%' . $q . '%';
+
+            $query->where(function ($q2) use ($like) {
+                $q2->where('application_no', 'like', $like)
+                    ->orWhereHas('property', function ($p) use ($like) {
+                        $p->where('property_code', 'like', $like);
                     })
-                    ->orWhereHas('property.address', function ($a) use ($q) {
-                        $a->where('municipality', 'like', '%' . $q . '%');
+                    ->orWhereHas('property.address', function ($a) use ($like) {
+                        $a->where('municipality', 'like', $like)
+                            ->orWhere('district', 'like', $like)
+                            ->orWhere('province', 'like', $like)
+                            ->orWhere('ward_no', 'like', $like)
+                            ->orWhere('tole_locality', 'like', $like)
+                            ->orWhere('full_address_text', 'like', $like);
                     });
             });
         }

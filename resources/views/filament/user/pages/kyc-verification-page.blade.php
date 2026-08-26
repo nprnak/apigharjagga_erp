@@ -73,17 +73,9 @@
             </div>
         @endif
 
-        <!-- Interactive Form -->
-        <form wire:submit="submit" class="space-y-6">
+        <!-- Interactive Step-wise Form (Wizard renders its own Next / Back / Submit controls) -->
+        <form wire:submit="submit">
             {{ $this->form }}
-
-            @if($kycRecord?->status !== 'approved' && $kycRecord?->status !== 'pending')
-                <div class="flex items-center justify-end gap-3 pt-5 border-t border-zinc-200 dark:border-zinc-800">
-                    <x-filament::button type="submit" size="lg" icon="heroicon-m-check">
-                        {{ $kycRecord?->status === 'rejected' ? 'Resubmit KYC Application' : 'Submit KYC for Verification' }}
-                    </x-filament::button>
-                </div>
-            @endif
         </form>
 
     </div>

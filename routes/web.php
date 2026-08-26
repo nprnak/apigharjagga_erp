@@ -20,6 +20,7 @@ Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
 // Public marketplace pages
 Route::get('/properties', [MarketplaceController::class, 'index'])->name('properties.index');
 Route::get('/properties/{listing}', [MarketplaceController::class, 'show'])->name('properties.show');
+Route::get('/locations/suggest', [MarketplaceController::class, 'suggestLocations'])->name('locations.suggest');
 
 Route::post('/inquiries', [PropertyInquiryController::class, 'store'])->name('inquiries.store');
 

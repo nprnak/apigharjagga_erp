@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             DocumentTypesSeeder::class,          // document_types (no dependencies)
             PropertyFeatureTypesSeeder::class,   // property_feature_types (no dependencies)
             ServiceTypesSeeder::class,           // service_types (no dependencies)
+            UserEightPropertySeeder::class,     // sample listing for user 8
         ]);
     }
 }

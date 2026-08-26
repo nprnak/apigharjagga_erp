@@ -8,13 +8,19 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Wizard;
+use Filament\Schemas\Components\Wizard\Step;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 
 class KycVerificationPage extends Page
 {
@@ -57,6 +63,7 @@ class KycVerificationPage extends Page
                 'permanent_municipality' => $this->kycRecord->permanent_municipality,
                 'permanent_ward_no' => $this->kycRecord->permanent_ward_no,
                 'permanent_tole' => $this->kycRecord->permanent_tole,
+                'same_as_permanent' => $this->currentMatchesPermanent(),
                 'current_province' => $this->kycRecord->current_province,
                 'current_district' => $this->kycRecord->current_district,
                 'current_municipality' => $this->kycRecord->current_municipality,
@@ -71,8 +78,28 @@ class KycVerificationPage extends Page
                 'full_name' => $user->name,
                 'email' => $user->email,
                 'nationality' => 'Nepali',
+                'same_as_permanent' => false,
             ]);
         }
+    }
+
+    /**
+     * Returns true when the saved current address is identical to the permanent
+     * address, so the "same as permanent" toggle can be pre-checked on load.
+     */
+    protected function currentMatchesPermanent(): bool
+    {
+        $k = $this->kycRecord;
+
+        if (! $k || empty($k->permanent_municipality)) {
+            return false;
+        }
+
+        return $k->current_province === $k->permanent_province
+            && $k->current_district === $k->permanent_district
+            && $k->current_municipality === $k->permanent_municipality
+            && $k->current_ward_no === $k->permanent_ward_no
+            && $k->current_tole === $k->permanent_tole;
     }
 
     public function form(Schema $schema): Schema
@@ -81,16 +108,38 @@ class KycVerificationPage extends Page
         $isPending = $this->kycRecord?->status === 'pending';
         $isLocked = $isApproved || $isPending;
 
-        return $schema
-            ->statePath('data')
-            ->disabled($isLocked)
-            ->components([
-                Section::make('Personal & Family Information')
-                    ->description('Enter your details exactly as printed on your government-issued citizenship or National ID.')
-                    ->icon('heroicon-o-user-circle')
-                    ->aside()
-                    ->columns(2)
-                    ->schema([
+        $submitLabel = $this->kycRecord?->status === 'rejected'
+            ? 'Resubmit KYC Application'
+            : 'Submit KYC for Verification';
+
+        // Current-address dropdowns mirror the permanent ones. When the toggle
+        // is on they are locked, but still dehydrated so the copied values save.
+        $currentSelects = array_map(
+            fn (Select $select): Select => $select
+                ->disabled(fn (Get $get): bool => (bool) $get('same_as_permanent'))
+                ->dehydrated(true),
+            LocationSelects::make(
+                province: 'current_province',
+                district: 'current_district',
+                municipality: 'current_municipality',
+                ward: 'current_ward_no',
+                required: false,
+                labels: [
+                    'province' => 'Province',
+                    'district' => 'District',
+                    'municipality' => 'Municipality / Rural Municipality',
+                    'ward' => 'Ward Number',
+                ],
+            ),
+        );
+
+        $wizard = Wizard::make([
+            Step::make('Personal Details')
+                ->description('Identity as printed on your government ID')
+                ->icon('heroicon-o-user-circle')
+                ->completedIcon('heroicon-m-check-badge')
+                ->schema([
+                    Grid::make(2)->schema([
                         TextInput::make('full_name')
                             ->label('Full Legal Name')
                             ->required()
@@ -148,64 +197,74 @@ class KycVerificationPage extends Page
                             ->maxLength(150)
                             ->prefixIcon('heroicon-m-envelope'),
                     ]),
+                ]),
 
-                Section::make('Residential Addresses')
-                    ->description('Your permanent address must match your citizenship certificate. Use the Current tab if you reside elsewhere.')
-                    ->icon('heroicon-o-map-pin')
-                    ->aside()
-                    ->schema([
-                        Tabs::make('addresses')
-                            ->contained(false)
-                            ->schema([
-                                Tabs\Tab::make('Permanent')
-                                    ->icon('heroicon-m-home-modern')
-                                    ->schema([
-                                        Grid::make(2)->schema([
-                                            ...LocationSelects::make(
-                                                province: 'permanent_province',
-                                                district: 'permanent_district',
-                                                municipality: 'permanent_municipality',
-                                                ward: 'permanent_ward_no',
-                                                required: true,
-                                                labels: [
-                                                    'province' => 'Province',
-                                                    'district' => 'District',
-                                                    'municipality' => 'Municipality / Rural Municipality',
-                                                    'ward' => 'Ward Number',
-                                                ],
-                                            ),
-                                            TextInput::make('permanent_tole')->label('Tole / Locality / Landmark')->columnSpanFull()->required(),
-                                        ]),
-                                    ]),
-                                Tabs\Tab::make('Current / Temporary')
-                                    ->icon('heroicon-m-map')
-                                    ->schema([
-                                        Grid::make(2)->schema([
-                                            ...LocationSelects::make(
-                                                province: 'current_province',
-                                                district: 'current_district',
-                                                municipality: 'current_municipality',
-                                                ward: 'current_ward_no',
-                                                required: false,
-                                                labels: [
-                                                    'province' => 'Province',
-                                                    'district' => 'District',
-                                                    'municipality' => 'Municipality / Rural Municipality',
-                                                    'ward' => 'Ward Number',
-                                                ],
-                                            ),
-                                            TextInput::make('current_tole')->label('Tole / Locality / Landmark')->columnSpanFull(),
-                                        ]),
-                                    ]),
-                            ]),
-                    ]),
+            Step::make('Residential Address')
+                ->description('Permanent and current / temporary address')
+                ->icon('heroicon-o-map-pin')
+                ->completedIcon('heroicon-m-check-badge')
+                ->schema([
+                    Section::make('Permanent Address')
+                        ->description('Must match the address on your citizenship certificate.')
+                        ->icon('heroicon-m-home-modern')
+                        ->columns(2)
+                        ->schema([
+                            ...LocationSelects::make(
+                                province: 'permanent_province',
+                                district: 'permanent_district',
+                                municipality: 'permanent_municipality',
+                                ward: 'permanent_ward_no',
+                                required: true,
+                                labels: [
+                                    'province' => 'Province',
+                                    'district' => 'District',
+                                    'municipality' => 'Municipality / Rural Municipality',
+                                    'ward' => 'Ward Number',
+                                ],
+                            ),
+                            TextInput::make('permanent_tole')
+                                ->label('Tole / Locality / Landmark')
+                                ->required()
+                                ->columnSpanFull(),
+                        ]),
 
-                Section::make('Photograph & Identity Document')
-                    ->description('Upload a passport-size photo and a clear scan of your official ID. Accepted: JPG, PNG, WebP up to 20 MB.')
-                    ->icon('heroicon-o-camera')
-                    ->aside()
-                    ->columns(2)
-                    ->schema([
+                    Section::make('Current / Temporary Address')
+                        ->description('Where you currently reside, if different from permanent.')
+                        ->icon('heroicon-m-map')
+                        ->columns(2)
+                        ->schema([
+                            Toggle::make('same_as_permanent')
+                                ->label('Same as permanent address')
+                                ->helperText('Copies every permanent address field into the current address below.')
+                                ->inline(false)
+                                ->live()
+                                ->afterStateUpdated(function (bool $state, Get $get, Set $set): void {
+                                    if (! $state) {
+                                        return;
+                                    }
+
+                                    $set('current_province', $get('permanent_province'));
+                                    $set('current_district', $get('permanent_district'));
+                                    $set('current_municipality', $get('permanent_municipality'));
+                                    $set('current_ward_no', $get('permanent_ward_no'));
+                                    $set('current_tole', $get('permanent_tole'));
+                                })
+                                ->columnSpanFull(),
+                            ...$currentSelects,
+                            TextInput::make('current_tole')
+                                ->label('Tole / Locality / Landmark')
+                                ->disabled(fn (Get $get): bool => (bool) $get('same_as_permanent'))
+                                ->dehydrated(true)
+                                ->columnSpanFull(),
+                        ]),
+                ]),
+
+            Step::make('Photograph & Documents')
+                ->description('Passport photo and identity document')
+                ->icon('heroicon-o-camera')
+                ->completedIcon('heroicon-m-check-badge')
+                ->schema([
+                    Grid::make(2)->schema([
                         FileUpload::make('selfie_photo_path')
                             ->label('Passport-Size Photo of Applicant (PP Size Photograph)')
                             ->disk('public')
@@ -247,7 +306,22 @@ class KycVerificationPage extends Page
                             ->downloadable()
                             ->helperText('Scanned copy or crisp photograph of both sides of your official identity card (Max: 20MB).'),
                     ]),
-            ]);
+                ]),
+        ])
+            ->persistStepInQueryString('kyc-step');
+
+        // Only expose the final submit button while the form is editable.
+        if (! $isLocked) {
+            $wizard->submitAction(new HtmlString(Blade::render(
+                '<x-filament::button type="submit" size="lg" icon="heroicon-m-check">{{ $label }}</x-filament::button>',
+                ['label' => $submitLabel],
+            )));
+        }
+
+        return $schema
+            ->statePath('data')
+            ->disabled($isLocked)
+            ->components([$wizard]);
     }
 
     public function submit(): void
@@ -265,6 +339,9 @@ class KycVerificationPage extends Page
         }
 
         $state = $this->form->getState();
+
+        // "same_as_permanent" is a UI-only helper flag, not a database column.
+        unset($state['same_as_permanent']);
 
         $payload = array_merge($state, [
             'status' => 'pending',
