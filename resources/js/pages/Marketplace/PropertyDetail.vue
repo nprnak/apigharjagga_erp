@@ -209,9 +209,8 @@ function handleKeydown(e: KeyboardEvent) {
 
                     <nav class="hidden md:flex items-center gap-6 text-sm font-semibold tracking-wide">
                         <a href="/properties" class="text-blue-100 hover:text-white transition-colors">Buy</a>
-                        <a href="/property-listing" class="text-blue-100 hover:text-white transition-colors">Sell</a>
-                        <a href="/annex-c" class="text-blue-100 hover:text-white transition-colors">Valuation</a>
-                        <a href="/agreement" class="text-blue-100 hover:text-white transition-colors">Agreements</a>
+                        <a href="/login" class="text-blue-100 hover:text-white transition-colors">Sell</a>
+                    
                     </nav>
                 </div>
 

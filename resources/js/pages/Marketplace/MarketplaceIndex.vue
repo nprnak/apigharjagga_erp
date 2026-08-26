@@ -303,24 +303,11 @@ onUnmounted(() => {
                             Buy
                         </a>
                         <a
-                            href="/property-listing"
+                            href="/login"
                             class="text-blue-100 hover:text-white transition-colors"
                         >
                             Sell
                         </a>
-                        <a
-                            href="/annex-c"
-                            class="text-blue-100 hover:text-white transition-colors"
-                        >
-                            Valuation
-                        </a>
-                        <a
-                            href="/agreement"
-                            class="text-blue-100 hover:text-white transition-colors"
-                        >
-                            Agreements
-                        </a>
-                    
                     </nav>
                 </div>
 

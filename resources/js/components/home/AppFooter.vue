@@ -11,7 +11,7 @@ const companyLinks = [
 const resourceLinks = [
     { label: 'Buy a home', href: '/properties' },
     { label: 'Home valuation', href: '#home-valuation' },
-    { label: 'Sell a property', href: '/property-listing' },
+    { label: 'Sell a property', href: '/login' },
     { label: 'All listings', href: '/properties' },
 ];
 

@@ -16,7 +16,7 @@ const cards = [
         heading: 'Sell a property',
         pitch: 'List your property with us and reach genuine buyers backed by proper documentation and verification.',
         ctaLabel: 'List a property',
-        ctaHref: '/property-listing',
+        ctaHref: '/login',
         theme: 'green' as const,
         illustration: 'phone' as const,
     },

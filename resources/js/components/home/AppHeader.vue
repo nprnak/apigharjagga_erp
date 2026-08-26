@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const nav = [
     { label: 'Buy', href: '/properties' },
-    { label: 'Sell', href: '/property-listing' },
+    { label: 'Sell', href: '/login' },
 ];
 
 const scrolled = ref(false);
