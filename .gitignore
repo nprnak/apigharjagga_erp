@@ -28,5 +28,8 @@ yarn-error.log
 /.zed
 
 
+# Documentation files
 document.md
-documentation-clientrf.md
+documentation*.md
+uidocumentation.md
+projectdocumentation.md

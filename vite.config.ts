@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -13,9 +14,20 @@ export default defineConfig({
         strictPort: true, // fail loudly instead of silently using a different port
     },
 
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
+        },
+    },
+
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.ts'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.ts',
+                'resources/css/filament/admin/theme.css',
+                'resources/css/filament/user/theme.css',
+            ],
             refresh: true,
             fonts: [
                 bunny('Instrument Sans', {
@@ -35,6 +47,7 @@ export default defineConfig({
         }),
         wayfinder({
             formVariants: true,
+            command: '"C:\\Users\\ACER\\.config\\herd\\bin\\php84\\php.exe" artisan wayfinder:generate',
         }),
     ],
 });

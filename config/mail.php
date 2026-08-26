@@ -115,4 +115,29 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Notification Email Address
+    |--------------------------------------------------------------------------
+    |
+    | Destination email for administrative notifications (e.g. KYC submissions).
+    | You can define ADMIN_EMAIL in your .env file.
+    |
+    */
+    'admin_address' => env('ADMIN_EMAIL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | KYC Sender Address (Optional Custom "From")
+    |--------------------------------------------------------------------------
+    |
+    | Dedicated sender address and name for KYC-related emails.
+    | Defaults to the global 'from' address if not specified.
+    |
+    */
+    'kyc_from' => [
+        'address' => env('KYC_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'name'    => env('KYC_FROM_NAME', env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel'))),
+    ],
+
 ];

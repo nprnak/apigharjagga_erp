@@ -80,14 +80,16 @@ return new class extends Migration
         //                agreement_type = 'listing_brokerage' has no price requirement.
         // Cannot be expressed via Laravel's schema builder — using raw DDL.
         // -----------------------------------------------------------------------
-        DB::statement(
-            "ALTER TABLE `agreements`
-             ADD CONSTRAINT `chk_agreements_sale_purchase_price`
-             CHECK (
-                 (`agreement_type` = 'sale_purchase' AND `total_price` IS NOT NULL)
-                 OR `agreement_type` = 'listing_brokerage'
-             )"
-        );
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement(
+                "ALTER TABLE `agreements`
+                 ADD CONSTRAINT `chk_agreements_sale_purchase_price`
+                 CHECK (
+                     (`agreement_type` = 'sale_purchase' AND `total_price` IS NOT NULL)
+                     OR `agreement_type` = 'listing_brokerage'
+                 )"
+            );
+        }
     }
 
     /**

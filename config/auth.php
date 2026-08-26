@@ -42,6 +42,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Dedicated guard for the Filament admin panel. It shares the same
+        // "users" provider as the "web" guard but keeps its own session
+        // identity (login_admin_*), so an admin and a normal user can be
+        // authenticated in the same browser without evicting each other.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*
