@@ -7,15 +7,18 @@ use App\Filament\Support\LocationSelects;
 use App\Models\Property;
 use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 
 class MyPropertyResource extends Resource
 {
@@ -58,36 +61,112 @@ class MyPropertyResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        $isKycApproved = Auth::user()?->kycVerification?->status === 'approved';
+        // Mirrors the admin PropertyResource workspace layout — an editable
+        // main column plus a read-only context sidebar — but exposes only
+        // fields the owner is allowed to see/edit. Admin-only controls
+        // (approval override, marketplace visibility toggle, owner/managed-by
+        // details) are intentionally left out.
+        return $schema
+            ->columns(['default' => 1, 'lg' => 3])
+            ->components([
+                // ---- Main editable column ---------------------------------
+                Group::make()
+                    ->columnSpan(['default' => 1, 'lg' => 2])
+                    ->schema([
+                        Section::make('Property Details & Specifications')
+                            ->description('Tell us what you are listing — its type, your ownership capacity, and the structural facts a buyer checks first.')
+                            ->icon('heroicon-o-home-modern')
+                            ->columns(2)
+                            ->schema(static::propertyDetailsFields()),
 
-        return $schema->components([
-            Section::make('Property Details & Specifications')
-                ->description('Tell us what you are listing — its type, your ownership capacity, and the structural facts a buyer checks first.')
-                ->icon('heroicon-o-home-modern')
-                ->aside()
-                ->columns(2)
-                ->schema(static::propertyDetailsFields()),
+                        Section::make('Location & Administrative Details')
+                            ->description('Where the property sits, as recorded by the local government. Buyers filter by these fields first.')
+                            ->icon('heroicon-o-map')
+                            ->columns(2)
+                            ->collapsible()
+                            ->schema(static::locationFields()),
 
-            Section::make('Location & Administrative Details')
-                ->description('Where the property sits, as recorded by the local government. Buyers filter by these fields first.')
-                ->icon('heroicon-o-map')
-                ->aside()
-                ->columns(2)
-                ->schema(static::locationFields()),
+                        Section::make('Financials & Pricing Expectations')
+                            ->description('Set the numbers you expect. Fill the selling price for sales, the monthly rent for rentals — or both.')
+                            ->icon('heroicon-o-banknotes')
+                            ->columns(2)
+                            ->collapsible()
+                            ->schema(static::financialFields()),
+                    ]),
 
-            Section::make('Financials & Pricing Expectations')
-                ->description('Set the numbers you expect. Fill the selling price for sales, the monthly rent for rentals — or both.')
-                ->icon('heroicon-o-banknotes')
-                ->aside()
-                ->columns(2)
-                ->schema(static::financialFields()),
+                // ---- Read-only context sidebar ----------------------------
+                Group::make()
+                    ->columnSpan(['default' => 1, 'lg' => 1])
+                    ->schema([
+                        Section::make('Application Status')
+                            ->icon('heroicon-o-shield-check')
+                            ->schema([
+                                Placeholder::make('approval_status_display')
+                                    ->label('Admin Review')
+                                    ->content(fn (?Property $record) => static::statusBadge(
+                                        $record?->approval_status,
+                                        ['approved' => 'success', 'pending' => 'warning', 'rejected' => 'danger'],
+                                    )),
+                                Placeholder::make('status_display')
+                                    ->label('Marketplace Status')
+                                    ->content(fn (?Property $record) => static::statusBadge(
+                                        $record?->status,
+                                        [
+                                            'listed' => 'success', 'draft' => 'gray',
+                                            'sold' => 'info', 'rented' => 'info', 'leased' => 'info',
+                                            'rejected' => 'danger', 'withdrawn' => 'danger',
+                                        ],
+                                    )),
+                            ]),
 
-            Section::make('Property Photographs & Media')
-                ->description('Listings with photos get far more enquiries. Show the exterior, interior, road access, and surroundings.')
-                ->icon('heroicon-o-camera')
-                ->aside()
-                ->schema(static::mediaFields()),
-        ]);
+                        Section::make('Record')
+                            ->icon('heroicon-o-clock')
+                            ->schema([
+                                Placeholder::make('property_code_meta')
+                                    ->label('Property Code')
+                                    ->content(fn (?Property $record) => $record?->property_code ?? '—'),
+                                Placeholder::make('created_at')
+                                    ->label('Submitted')
+                                    ->content(fn (?Property $record) => $record?->created_at?->format('d M Y, H:i') ?? '—'),
+                                Placeholder::make('updated_at')
+                                    ->label('Last Updated')
+                                    ->content(fn (?Property $record) => $record?->updated_at?->format('d M Y, H:i') ?? '—'),
+                            ]),
+                    ]),
+
+                // ---- Media, full width -------------------------------------
+                Section::make('Property Photographs & Media')
+                    ->description('Listings with photos get far more enquiries. Show the exterior, interior, road access, and surroundings.')
+                    ->icon('heroicon-o-camera')
+                    ->columnSpanFull()
+                    ->collapsible()
+                    ->schema(static::mediaFields()),
+            ]);
+    }
+
+    protected static function statusBadge(?string $state, array $colors): HtmlString
+    {
+        if (! $state) {
+            return new HtmlString('—');
+        }
+
+        $palette = [
+            'success' => ['#ecfdf5', '#a7f3d0', '#047857'],
+            'warning' => ['#fef3c7', '#fde68a', '#92400e'],
+            'danger'  => ['#ffe4e6', '#fecdd3', '#be123c'],
+            'info'    => ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+            'gray'    => ['#f1f5f9', '#e2e8f0', '#475569'],
+        ];
+
+        $color = $colors[$state] ?? 'gray';
+        [$bg, $border, $text] = $palette[$color] ?? $palette['gray'];
+        $label = ucwords(str_replace('_', ' ', $state));
+
+        return new HtmlString(
+            '<span style="display:inline-flex;align-items:center;border-radius:9999px;border:1px solid '.$border.
+            ';background-color:'.$bg.';padding:0.125rem 0.625rem;font-size:0.75rem;font-weight:600;color:'.$text.'">'.
+            e($label).'</span>'
+        );
     }
 
     /**
