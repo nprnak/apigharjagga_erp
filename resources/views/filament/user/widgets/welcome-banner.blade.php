@@ -4,6 +4,7 @@
     $status = $kyc?->status ?? 'unsubmitted';
     $isVerified = $status === 'approved';
     $initials = strtoupper(substr($user->name ?? 'U', 0, 2));
+    $photoUrl = $kyc?->selfie_photo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($kyc->selfie_photo_path) : null;
 @endphp
 
 <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md"
@@ -74,9 +75,14 @@
         <!-- Right User Pill Preview (Guaranteed Circle) -->
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 0.75rem; background-color: #f8fafc; padding: 1rem 1.5rem; border: 1px solid #f1f5f9; min-width: 140px; flex-shrink: 0;">
             <div style="position: relative; width: 50px; height: 50px; display: inline-block;">
-                <div style="width: 50px; height: 50px; min-width: 50px; min-height: 50px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center;">
-                    {{ $initials }}
-                </div>
+                @if($photoUrl)
+                    <img src="{{ $photoUrl }}" alt="{{ $user->name ?? 'User' }}"
+                         style="width: 50px; height: 50px; min-width: 50px; min-height: 50px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid #ffffff; box-shadow: 0 0 0 1px #e2e8f0;">
+                @else
+                    <div style="width: 50px; height: 50px; min-width: 50px; min-height: 50px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center;">
+                        {{ $initials }}
+                    </div>
+                @endif
                 <span style="position: absolute; bottom: -2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; background-color: {{ $isVerified ? '#10b981' : '#3b82f6' }}; color: #ffffff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff;">
                     {{ $isVerified ? '✓' : '!' }}
                 </span>
