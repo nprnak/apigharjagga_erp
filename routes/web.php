@@ -58,6 +58,7 @@ Route::middleware('auth')->get('/user/dashboard', function (Request $request) {
 Route::middleware(['auth:admin', 'admin'])->group(function () {
     Route::post('/admin/approve', [AdminApprovalController::class, 'approve'])->name('admin.approve');
     Route::post('/admin/reject', [AdminApprovalController::class, 'reject'])->name('admin.reject');
+    Route::get('/admin/kyc-verifications/{id}/pdf', [KycController::class, 'downloadPdf'])->name('admin.kyc.pdf');
 });
 
 Route::middleware('auth')->group(function () {
