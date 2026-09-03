@@ -11,6 +11,24 @@ class Property extends Model
 {
     protected $primaryKey = 'property_id';
 
+    protected static function booted(): void
+    {
+        // Backstop: a property cannot be approved or listed on the marketplace
+        // until a site inspection has been completed and reviewed — even if
+        // something bypasses the Filament UI (tinker, raw SQL, legacy routes).
+        static::updating(function (Property $property) {
+            if (! $property->hasCompletedSiteInspection()) {
+                if ($property->isDirty('approval_status') && $property->approval_status === 'approved') {
+                    $property->approval_status = $property->getOriginal('approval_status');
+                }
+
+                if ($property->isDirty('is_listed') && $property->is_listed) {
+                    $property->is_listed = false;
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'property_code',
         'owner_client_id',
@@ -87,5 +105,26 @@ class Property extends Model
     public function inquiries(): HasMany
     {
         return $this->hasMany(PropertyInquiry::class, 'property_id', 'property_id');
+    }
+
+    public function siteInspections(): HasMany
+    {
+        return $this->hasMany(SiteInspection::class, 'property_id', 'property_id');
+    }
+
+    public function latestSiteInspection(): ?SiteInspection
+    {
+        return $this->siteInspections()->latest('inspection_id')->first();
+    }
+
+    /**
+     * A property can only be approved / shown on the public marketplace once
+     * a site inspection has actually been carried out and signed off
+     * (reviewed by a valuation officer or admin) — see
+     * PropertyResource::approveAction() and the `is_listed` toggle.
+     */
+    public function hasCompletedSiteInspection(): bool
+    {
+        return $this->siteInspections()->where('status', SiteInspection::STATUS_REVIEWED)->exists();
     }
 }

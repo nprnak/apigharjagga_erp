@@ -3,12 +3,15 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Auth\FilamentLogoutController;
+use App\Policies\RolePolicy;
 use Carbon\CarbonImmutable;
 use Filament\Auth\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         \App\Models\KycVerification::observe(\App\Observers\KycVerificationObserver::class);
+
+        // Spatie's Role model lives outside app/Models, so Laravel's policy
+        // auto-discovery can't find RolePolicy on its own. This lets Filament
+        // Shield's Roles resource enforce it.
+        Gate::policy(Role::class, RolePolicy::class);
     }
 
     /**

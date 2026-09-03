@@ -18,12 +18,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            RolePermissionSeeder::class,        // Spatie roles/permissions (admin, user) — no dependencies
             ProvinceSeeder::class,              // provinces → districts → municipalities → wards (no dependencies)
-            RolesSeeder::class,                 // roles (no dependencies)
+            RolesSeeder::class,                 // staff job-title lookup (no dependencies)
             DocumentTypesSeeder::class,          // document_types (no dependencies)
             PropertyFeatureTypesSeeder::class,   // property_feature_types (no dependencies)
             ServiceTypesSeeder::class,           // service_types (no dependencies)
             UserEightPropertySeeder::class,     // sample listing for user 8
+            StaffAccountsSeeder::class,          // sample site_inspection_engineer / valuation_officer logins
         ]);
     }
 }

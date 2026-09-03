@@ -11,19 +11,15 @@ class AdminApprovalController extends Controller
 {
     public function approve(Request $request): RedirectResponse
     {
-        $this->apply($request, 'approved');
-
-        return back();
+        return $this->apply($request, 'approved');
     }
 
     public function reject(Request $request): RedirectResponse
     {
-        $this->apply($request, 'rejected');
-
-        return back();
+        return $this->apply($request, 'rejected');
     }
 
-    private function apply(Request $request, string $status): void
+    private function apply(Request $request, string $status): RedirectResponse
     {
         $data = $request->validate([
             'type' => ['required', 'in:kyc,listing'],
@@ -39,12 +35,19 @@ class AdminApprovalController extends Controller
                 'reviewed_at' => now(),
             ]);
 
-            return;
+            return back();
         }
 
         $property = Property::query()->findOrFail($data['id']);
+
+        if ($status === 'approved' && ! $property->hasCompletedSiteInspection()) {
+            return back()->with('error', 'This property cannot be approved until its site inspection has been completed and reviewed.');
+        }
+
         $property->update([
             'approval_status' => $status,
         ]);
+
+        return back();
     }
 }

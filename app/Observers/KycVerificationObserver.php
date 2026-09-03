@@ -54,9 +54,9 @@ class KycVerificationObserver
                 $adminEmails = array_merge($adminEmails, $configuredList);
             }
 
-            // 2. Fetch all admin users from the database
-            $dbAdmins = User::query()
-                ->where('role', 'admin')
+            // 2. Fetch all admin users from the database (Spatie "admin" role,
+            //    stored under the "web" guard — see App\Models\User).
+            $dbAdmins = User::role('admin', 'web')
                 ->pluck('email')
                 ->filter()
                 ->all();
