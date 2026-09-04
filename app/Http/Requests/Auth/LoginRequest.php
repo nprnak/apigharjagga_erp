@@ -36,13 +36,21 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
+     * Single platform login: credentials are checked once against the
+     * shared "users" table. Everyone gets a "web" guard session (for the
+     * user panel); admins additionally get an "admin" guard session so
+     * they can also reach the Filament admin panel without a second form.
+     *
      * @throws ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('email', 'password');
+        $remember = $this->boolean('remember');
+
+        if (! Auth::guard('web')->attempt($credentials, $remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -51,6 +59,12 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        $user = Auth::guard('web')->user();
+
+        if ($user->role === 'admin') {
+            Auth::guard('admin')->login($user, $remember);
+        }
     }
 
     /**

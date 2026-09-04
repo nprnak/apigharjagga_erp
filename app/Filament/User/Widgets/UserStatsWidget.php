@@ -17,19 +17,18 @@ class UserStatsWidget extends BaseWidget
     {
         $userId = Auth::id();
 
-        $activeListings = Property::where('user_id', $userId)
-            ->where('approval_status', 'approved')
-            ->count();
+        // Single aggregate query instead of 4 separate COUNTs.
+        $counts = Property::where('user_id', $userId)
+            ->selectRaw('count(*) as total')
+            ->selectRaw("count(case when approval_status = 'approved' then 1 end) as approved")
+            ->selectRaw("count(case when approval_status = 'pending' then 1 end) as pending")
+            ->selectRaw("count(case when approval_status = 'rejected' then 1 end) as rejected")
+            ->first();
 
-        $pendingListings = Property::where('user_id', $userId)
-            ->where('approval_status', 'pending')
-            ->count();
-
-        $rejectedListings = Property::where('user_id', $userId)
-            ->where('approval_status', 'rejected')
-            ->count();
-
-        $totalProperties = Property::where('user_id', $userId)->count();
+        $activeListings = $counts->approved;
+        $pendingListings = $counts->pending;
+        $rejectedListings = $counts->rejected;
+        $totalProperties = $counts->total;
 
         $kycStatus = Auth::user()?->kycVerification?->status ?? 'unsubmitted';
 

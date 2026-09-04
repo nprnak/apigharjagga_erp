@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\UserResource\Pages;
+use App\Models\Role;
 use App\Models\User;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -14,14 +16,30 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
+    use AuthorizesViaRole;
+
     protected static ?string $model = User::class;
 
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static function permissionKey(): string
+    {
+        return 'users';
+    }
+
+    protected static function currentUserIsSuperAdmin(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::guard('admin')->user();
+
+        return (bool) $user?->isSuperAdmin();
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {
@@ -31,6 +49,13 @@ class UserResource extends Resource
     public static function getNavigationGroup(): string|null
     {
         return 'Users & KYC';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        // The table columns below render staffRole/kycVerification, so eager
+        // load them here to avoid an N+1 query per row.
+        return parent::getEloquentQuery()->with(['staffRole', 'kycVerification']);
     }
 
     public static function form(Schema $schema): Schema
@@ -48,7 +73,14 @@ class UserResource extends Resource
                         ->maxLength(255),
                     Select::make('role')
                         ->options(['user' => 'User', 'admin' => 'Admin'])
+                        ->live()
                         ->required(),
+                    Select::make('role_id')
+                        ->label('Staff Role')
+                        ->options(fn () => Role::pluck('role_name', 'role_id'))
+                        ->helperText('Controls which admin resources this user can access. Leave blank for full access.')
+                        ->visible(fn ($get) => $get('role') === 'admin' && static::currentUserIsSuperAdmin())
+                        ->nullable(),
                     DateTimePicker::make('email_verified_at')
                         ->label('Email Verified At'),
                     TextInput::make('password')
@@ -73,6 +105,10 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('role')
                     ->badge()
                     ->color(fn (string $state): string => $state === 'admin' ? 'danger' : 'primary'),
+                Tables\Columns\TextColumn::make('staffRole.role_name')
+                    ->label('Staff Role')
+                    ->placeholder('Full access')
+                    ->badge(),
                 Tables\Columns\TextColumn::make('kycVerification.status')
                     ->label('KYC')
                     ->badge()

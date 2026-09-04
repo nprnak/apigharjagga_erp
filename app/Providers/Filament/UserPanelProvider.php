@@ -31,7 +31,6 @@ class UserPanelProvider extends PanelProvider
             ->id('user')
             ->path('dashboard')
             ->authGuard('web')
-            ->login()
             ->brandName('API GharJagga')
             ->brandLogo(null)
             ->darkMode(false)

@@ -26,15 +26,18 @@ class ListingsStatusChart extends ChartWidget
     {
         $userId = Auth::id();
 
-        $approved = Property::where('user_id', $userId)->where('approval_status', 'approved')->count();
-        $pending = Property::where('user_id', $userId)->where('approval_status', 'pending')->count();
-        $rejected = Property::where('user_id', $userId)->where('approval_status', 'rejected')->count();
+        // Single aggregate query instead of 3 separate COUNTs.
+        $counts = Property::where('user_id', $userId)
+            ->selectRaw("count(case when approval_status = 'approved' then 1 end) as approved")
+            ->selectRaw("count(case when approval_status = 'pending' then 1 end) as pending")
+            ->selectRaw("count(case when approval_status = 'rejected' then 1 end) as rejected")
+            ->first();
 
         return [
             'datasets' => [
                 [
                     'label' => 'Listings',
-                    'data' => [$approved, $pending, $rejected],
+                    'data' => [$counts->approved, $counts->pending, $counts->rejected],
                     'backgroundColor' => [
                         'rgba(16, 185, 129, 0.85)',
                         'rgba(245, 158, 11, 0.85)',

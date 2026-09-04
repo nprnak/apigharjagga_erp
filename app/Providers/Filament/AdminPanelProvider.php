@@ -30,7 +30,6 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->authGuard('admin')
-            ->login()
             ->brandName('API GharJagga MIS')
             ->brandLogo(null)
             ->darkMode(true)
@@ -51,6 +50,16 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Inquiries & Leads')
                     ->collapsed(false),
                 NavigationGroup::make('Clients')
+                    ->collapsed(false),
+                NavigationGroup::make('Complaints')
+                    ->collapsed(false),
+                NavigationGroup::make('Valuation & Survey')
+                    ->collapsed(false),
+                NavigationGroup::make('Verification & Inspection')
+                    ->collapsed(false),
+                NavigationGroup::make('Service Delivery')
+                    ->collapsed(false),
+                NavigationGroup::make('Access Control')
                     ->collapsed(false),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

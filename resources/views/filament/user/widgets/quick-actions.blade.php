@@ -1,6 +1,9 @@
 @php
     $kycStatus = auth()->user()?->kycVerification?->status ?? 'unsubmitted';
     $isVerified = $kycStatus === 'approved';
+    $valuationRequestCount = auth()->user()?->properties()
+        ->whereHas('valuationRequests')
+        ->count() ?? 0;
 @endphp
 
 <div class="dash-card" style="height: 100%;">
@@ -85,6 +88,25 @@
             </div>
             <span style="margin-top: 0.5rem; font-size: 0.65rem; font-weight: 600; color: #d97706; display: inline-flex; align-items: center; gap: 2px;">
                 Open &rarr;
+            </span>
+        </a>
+
+        <!-- 5. Valuation Requests -->
+        <a href="{{ $isVerified ? url('/dashboard/my-valuation-requests/create') : url('/dashboard/kyc-verification-page') }}"
+           style="display: flex; flex-direction: column; justify-content: space-between; border-radius: 0.75rem; border: 1px solid #f1f5f9; background-color: #f8fafc; padding: 0.875rem; text-decoration: none; transition: all 0.2s;">
+            <div>
+                <div style="width: 32px; height: 32px; border-radius: 0.5rem; background-color: {{ $isVerified ? '#ede9fe' : '#fee2e2' }}; color: {{ $isVerified ? '#7c3aed' : '#dc2626' }}; display: flex; align-items: center; justify-content: center;">
+                    <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h3m8-8v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h8l5 5z" />
+                    </svg>
+                </div>
+                <h4 style="margin-top: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #0f172a; line-height: 1.2;">Property Valuation</h4>
+                <p style="margin-top: 0.25rem; font-size: 0.65rem; color: {{ $isVerified ? '#64748b' : '#dc2626' }}; line-height: 1.2;">
+                    {{ $isVerified ? "{$valuationRequestCount} request(s) submitted" : 'KYC Required to request' }}
+                </p>
+            </div>
+            <span style="margin-top: 0.5rem; font-size: 0.65rem; font-weight: 600; color: {{ $isVerified ? '#7c3aed' : '#dc2626' }}; display: inline-flex; align-items: center; gap: 2px;">
+                {{ $isVerified ? 'Request / Track →' : 'Verify KYC →' }}
             </span>
         </a>
     </div>

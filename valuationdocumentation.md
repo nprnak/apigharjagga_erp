@@ -1,6 +1,6 @@
 # Property Valuation Module — Documentation
 
-This document explains the complete property valuation flow in the APIGharJagga MIS project: every screen, route, controller step, database table, and the parts that are still unimplemented. It also describes how to finish the module (valuator assignment → report → approval → PDF).
+This document explains the complete property valuation flow in the APIGharJagga MIS project: public intake, staff assignment, site visit, report preparation, approval, and PDF delivery.
 
 ---
 
@@ -10,9 +10,9 @@ The valuation module is built around the **Annex-C "Property Valuation Request F
 
 Key architectural facts:
 
-- **No Eloquent models.** All writes use the raw query builder (`DB::table(...)`).
-- **No Filament admin resource.** Submitted requests have no admin UI yet.
-- **Front half only.** Intake (request + document checklist) is fully implemented. The back half (valuator assignment, field visit, valuation report, approval, PDF) has database schema but **no code**.
+- **Eloquent workflow.** Intake still uses the transaction in `ValuationRequestController`; processing uses Eloquent models and Filament resources.
+- **Staff processing UI.** Admin users with `valuations.view` and `valuations.manage` permissions can assign valuers, schedule visits, start work, create reports, and approve them.
+- **Complete workflow.** Approved reports are rendered to PDF and stored on the public disk for download by staff and the requesting user.
 
 There is also a separate, unrelated **client-side "instant home estimate"** marketing widget (`HomeValuation.vue`) that computes a fake number in the browser and never touches the server. It is documented in section 9 to avoid confusion, but it is **not** part of the Annex-C valuation module.
 
@@ -20,16 +20,16 @@ There is also a separate, unrelated **client-side "instant home estimate"** mark
 
 ## 2. Component map
 
-| Layer | File | Purpose |
-|-------|------|---------|
-| Entry link | `resources/js/pages/Marketplace/PropertyDetail.vue` (~line 579) | "Request Official Valuation" button → `/annex-c` |
-| Frontend form | `resources/js/pages/AnnexC.vue` | 7-step wizard, ~3600 lines |
-| Routes | `routes/web.php:86-90` | `GET/POST /annex-c` |
-| Controller | `app/Http/Controllers/ValuationRequestController.php` | `create()` + `store()` |
-| Migration | `database/migrations/2026_08_14_102200_create_valuation_requests_table.php` | `valuation_requests` table |
-| Migration | `database/migrations/2026_08_14_102300_create_valuation_request_documents_table.php` | `valuation_request_documents` table |
-| Migration | `database/migrations/2026_08_14_102400_create_valuation_reports_table.php` | `valuation_reports` table (schema only, unused) |
-| Wayfinder helper | `resources/js/actions/App/Http/Controllers/ValuationRequestController.ts` | Auto-generated JS route bindings |
+| Layer            | File                                                                                 | Purpose                                          |
+| ---------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Entry link       | `resources/js/pages/Marketplace/PropertyDetail.vue` (~line 579)                      | "Request Official Valuation" button → `/annex-c` |
+| Frontend form    | `resources/js/pages/AnnexC.vue`                                                      | 7-step wizard, ~3600 lines                       |
+| Routes           | `routes/web.php:86-90`                                                               | `GET/POST /annex-c`                              |
+| Controller       | `app/Http/Controllers/ValuationRequestController.php`                                | `create()` + `store()`                           |
+| Migration        | `database/migrations/2026_08_14_102200_create_valuation_requests_table.php`          | `valuation_requests` table                       |
+| Migration        | `database/migrations/2026_08_14_102300_create_valuation_request_documents_table.php` | `valuation_request_documents` table              |
+| Migration        | `database/migrations/2026_08_14_102400_create_valuation_reports_table.php`           | `valuation_reports` table                        |
+| Wayfinder helper | `resources/js/actions/App/Http/Controllers/ValuationRequestController.ts`            | Auto-generated JS route bindings                 |
 
 Lookup data feeding the flow (seeders):
 
@@ -121,15 +121,15 @@ Returns `Inertia::render('AnnexC')`. No data passed in.
 
 **Transaction** (`DB::transaction`, `line 107`) runs 7 steps in order. If any throws, the whole thing rolls back.
 
-| Step | Table | Notes |
-|------|-------|-------|
-| 1 | `addresses` | permanent address → `$permanentAddressId` (`line 115`) |
-| 2 | `addresses` | current address → `$currentAddressId` (`line 131`) |
-| 3 | `clients` | **upsert by `citizenship_no`** (`line 147`). If found → update name/contact/addresses. If not → insert with `client_code = 'CL-' . strtoupper(Str::random(8))`, `client_type = 'owner'`, `nationality = 'Nepali'`, `mis_entry_status = 'pending'`, `is_active = 1` |
-| 4 | `addresses` | property address → `$propertyAddressId` (`line 195`) — note: no `full_address_text` here |
-| 5 | `properties` | `property_code = 'PROP-' . strtoupper(Str::random(8))`, `ownership_role = 'self'`, **`status = 'under_valuation'`** (`line 245`) |
-| 6 | `valuation_requests` | `request_code = 'VAL-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))` (`line 258`), `application_received_date = today`, **`status = 'received'`** (`line 291`) |
-| 7 | `valuation_request_documents` | one row per document type — see section 6 |
+| Step | Table                         | Notes                                                                                                                                                                                                                                                              |
+| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | `addresses`                   | permanent address → `$permanentAddressId` (`line 115`)                                                                                                                                                                                                             |
+| 2    | `addresses`                   | current address → `$currentAddressId` (`line 131`)                                                                                                                                                                                                                 |
+| 3    | `clients`                     | **upsert by `citizenship_no`** (`line 147`). If found → update name/contact/addresses. If not → insert with `client_code = 'CL-' . strtoupper(Str::random(8))`, `client_type = 'owner'`, `nationality = 'Nepali'`, `mis_entry_status = 'pending'`, `is_active = 1` |
+| 4    | `addresses`                   | property address → `$propertyAddressId` (`line 195`) — note: no `full_address_text` here                                                                                                                                                                           |
+| 5    | `properties`                  | `property_code = 'PROP-' . strtoupper(Str::random(8))`, `ownership_role = 'self'`, **`status = 'under_valuation'`** (`line 245`)                                                                                                                                   |
+| 6    | `valuation_requests`          | `request_code = 'VAL-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6))` (`line 258`), `application_received_date = today`, **`status = 'received'`** (`line 291`)                                                                                        |
+| 7    | `valuation_request_documents` | one row per document type — see section 6                                                                                                                                                                                                                          |
 
 **Fields never set by `store()`** (left for later back-half handling): `assigned_valuator_staff_id`, `field_visit_date`, and the entire `valuation_reports` table.
 
@@ -142,14 +142,14 @@ Returns `Inertia::render('AnnexC')`. No data passed in.
 Step 5's 7 checkboxes are booleans in `form.documents`. The controller maps each frontend key to a `document_types.doc_name` string (`ValuationRequestController.php:306-327`):
 
 | Frontend key (`form.documents.*`) | `document_types.doc_name` looked up |
-|-----------------------------------|-------------------------------------|
-| `land_ownership_certificate` | `Land Ownership Certificate` |
-| `citizenship_certificate` | `Citizenship Copy` |
-| `land_revenue_receipt` | `Land Revenue Receipt` |
-| `land_map_trace_map` | `Blueprint` |
-| `building_approval_certificate` | `Building Approval Certificate` |
-| `tax_clearance_certificate` | `Tax Clearance` |
-| `other_documents` | `Other` |
+| --------------------------------- | ----------------------------------- |
+| `land_ownership_certificate`      | `Land Ownership Certificate`        |
+| `citizenship_certificate`         | `Citizenship Copy`                  |
+| `land_revenue_receipt`            | `Land Revenue Receipt`              |
+| `land_map_trace_map`              | `Blueprint`                         |
+| `building_approval_certificate`   | `Building Approval Certificate`     |
+| `tax_clearance_certificate`       | `Tax Clearance`                     |
+| `other_documents`                 | `Other`                             |
 
 For each mapping, the controller looks up the `document_types` row by `doc_name` and, **only if it exists**, inserts a `valuation_request_documents` row with `is_available = 1` if the checkbox was truthy else `0`.
 
@@ -181,7 +181,7 @@ For each mapping, the controller looks up the `document_types` row by `doc_name`
 - `doc_type_id` FK → `document_types.doc_type_id`
 - `is_available` boolean default false
 
-### `valuation_reports` (migration `..._102400_...`) — schema only, **no code writes to it**
+### `valuation_reports` (migration `..._102400_...`)
 
 - `report_id` PK, `report_no` string(30) unique
 - `request_id` FK → `valuation_requests` (RESTRICT), `property_id` FK → `properties` (RESTRICT)
@@ -209,7 +209,7 @@ received ─> site_visit_scheduled ─> in_progress ─> report_issued
    └────────────────────────────────────────────> cancelled
 ```
 
-Only `received` is ever written today (in `store()`). All later transitions require code that does not yet exist.
+Transitions are implemented in the staff resource: assignment keeps the request received, scheduling requires an assigned valuer, starting work sets `in_progress`, and creating a report also ensures the request is in progress. Approving a report sets the request to `report_issued`.
 
 Report status (`valuation_reports.approval_status`), once the back half is built:
 
@@ -236,13 +236,13 @@ draft ─> pending_approval ─> approved
 - `create()` / `store()` with full validation and a 7-step transactional intake.
 - Request + document-checklist persistence.
 
-**Missing (back half):**
+**Implemented (processing):**
 
-- No Eloquent models (`ValuationRequest`, `ValuationRequestDocument`, `ValuationReport`, `Staff`).
-- No admin/staff UI (no Filament resource) to list or process requests.
-- No valuator assignment, no field-visit scheduling (columns exist, unused).
-- No `valuation_reports` writes — no report entry, approval workflow, or PDF.
-- No user-facing confirmation with the `request_code` (only `alert()` + reload).
+- Eloquent models and relationships for requests, reports, and staff.
+- Admin assignment, scheduled visit, start valuation, and lifecycle status actions.
+- Draft report creation, submission for approval, rejection, and approval.
+- Calculation sheet using land value, building value, depreciation, and adjustments; the final amount is recalculated server-side.
+- Approved PDF generation, storage, staff download, and user display of approved reports.
 
 ---
 
@@ -268,15 +268,27 @@ Create `app/Filament/Resources/ValuationRequestResource.php`:
 - **Table**: `request_code`, client name, property code, `purpose_of_valuation`, `status`, `application_received_date`. Add a `status` filter.
 - **View/Edit page**: show applicant, property, building, the document checklist (from `valuation_request_documents`), and site-visit fields.
 - **Actions**:
-  - *Assign valuator* — set `assigned_valuator_staff_id`, move `status` to `site_visit_scheduled`, set `field_visit_date`.
-  - *Mark in progress* — `status = in_progress`.
-  - *Issue report* — opens the report form (11.3), then `status = report_issued`.
-  - *Cancel* — `status = cancelled`.
+    - _Assign valuator_ — set `assigned_valuator_staff_id`, move `status` to `site_visit_scheduled`, set `field_visit_date`.
+    - _Mark in progress_ — `status = in_progress`.
+    - _Issue report_ — opens the report form (11.3), then `status = report_issued`.
+    - _Cancel_ — `status = cancelled`.
 
 ### 11.3 Valuation report + approval
 
 - Form to create a `valuation_reports` row: pick `valuation_type` (the 9-value enum), enter `valuated_amount`, `rate_basis`, set `valuator_staff_id`. Generate `report_no` (e.g. `VALR-YYYYMMDD-XXXXXX`), start at `approval_status = draft`.
 - Approval action: `pending_approval` → `approved` / `rejected`, recording `approved_by_staff_id` and `issued_date`; flip the parent request to `report_issued` on approval.
+
+#### Calculation sheet
+
+The report amount is calculated using:
+
+```text
+Land value = land area × land rate
+Building value = building area × building rate × (1 − depreciation percentage / 100)
+Final valuation = land value + building value + other adjustment
+```
+
+The calculation inputs and final amount are stored on `valuation_reports`. The final amount is recalculated on create and edit, and the approved PDF prints the calculation inputs for auditability.
 
 ### 11.4 Report PDF
 

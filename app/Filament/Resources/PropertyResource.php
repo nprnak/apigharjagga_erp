@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\PropertyResource\Pages;
 use App\Models\Property;
 use Filament\Actions;
@@ -20,11 +21,18 @@ use Filament\Tables\Table;
 
 class PropertyResource extends Resource
 {
+    use AuthorizesViaRole;
+
     protected static ?string $model = Property::class;
 
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'property_code';
+
+    protected static function permissionKey(): string
+    {
+        return 'properties';
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {
@@ -44,6 +52,12 @@ class PropertyResource extends Resource
     public static function getNavigationBadgeColor(): string|array|null
     {
         return 'warning';
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        // Municipality is stored as text on addresses, not as a relationship.
+        return parent::getEloquentQuery()->with(['user', 'address']);
     }
 
     public static function form(Schema $schema): Schema

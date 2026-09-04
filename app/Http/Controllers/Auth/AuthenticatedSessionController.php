@@ -28,8 +28,8 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      *
-     * Uses Inertia::location() because the post-login destination is the
-     * Filament user panel (non-Inertia HTML). A normal redirect would make
+     * Uses Inertia::location() because the post-login destination may be the
+     * Filament admin/user panel (non-Inertia HTML). A normal redirect would make
      * Inertia v3 open that HTML in a floating error <dialog> on top of /login.
      */
     public function store(LoginRequest $request): SymfonyResponse
@@ -38,9 +38,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return Inertia::location(
-            $request->session()->pull('url.intended', url('/dashboard'))
-        );
+        $user = Auth::guard('web')->user();
+
+        // Single platform login: admins land on the admin panel, everyone
+        // else goes to their intended page or the user dashboard.
+        $target = $user->role === 'admin'
+            ? url('/admin')
+            : $request->session()->pull('url.intended', url('/dashboard'));
+
+        return Inertia::location($target);
     }
 
     /**
@@ -48,11 +54,10 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        // Log out only the web guard. Using regenerate() (instead of
-        // invalidate()) rotates the session id and CSRF token for security
-        // while preserving any separate admin-panel session in the same
-        // browser, so signing out here does not evict a logged-in admin.
+        // Log out both guards since a single login form controls both the
+        // user and admin panel sessions.
         Auth::guard('web')->logout();
+        Auth::guard('admin')->logout();
 
         $request->session()->regenerate();
 

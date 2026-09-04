@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\InquiryResource\Pages;
 use App\Models\PropertyInquiry;
 use Filament\Actions;
@@ -18,11 +19,18 @@ use Filament\Tables\Table;
 
 class InquiryResource extends Resource
 {
+    use AuthorizesViaRole;
+
     protected static ?string $model = PropertyInquiry::class;
 
     protected static ?string $modelLabel = 'Inquiry';
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static function permissionKey(): string
+    {
+        return 'inquiries';
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {

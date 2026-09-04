@@ -6,6 +6,7 @@ use App\Models\KycVerification;
 use App\Models\Property;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AdminApprovalController extends Controller
 {
@@ -30,6 +31,12 @@ class AdminApprovalController extends Controller
             'id' => ['required', 'integer'],
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $permission = $data['type'] === 'kyc' ? 'kyc.manage' : 'properties.manage';
+
+        /** @var \App\Models\User|null $admin */
+        $admin = Auth::guard('admin')->user();
+        abort_unless($admin?->hasPermission($permission), 403);
 
         if ($data['type'] === 'kyc') {
             $kyc = KycVerification::query()->findOrFail($data['id']);

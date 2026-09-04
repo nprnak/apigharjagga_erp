@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\KycVerificationResource\Pages;
 use App\Filament\Support\LocationSelects;
 use App\Models\KycVerification;
@@ -23,7 +24,14 @@ use Filament\Tables\Table;
 
 class KycVerificationResource extends Resource
 {
+    use AuthorizesViaRole;
+
     protected static ?string $model = KycVerification::class;
+
+    protected static function permissionKey(): string
+    {
+        return 'kyc';
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {

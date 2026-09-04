@@ -2,31 +2,26 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Filament\Facades\Filament;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 /**
- * Guard-scoped replacement for Filament's default logout controller.
+ * Unified logout handler for both Filament panels.
  *
- * Filament's built-in controller calls session()->invalidate(), which flushes
- * the entire session and therefore signs out every guard sharing that session
- * (both the admin and the user panels). This version logs out only the current
- * panel's guard and uses regenerate() instead, so signing out of one panel
- * leaves a session established on the other panel intact.
+ * Both panels use the shared /login entry point, so logout must clear both
+ * guards and return to that page rather than redirecting to a panel URL.
  */
 class FilamentLogoutController
 {
-    public function __invoke(): LogoutResponse
+    public function __invoke(): RedirectResponse
     {
-        // Filament::auth() resolves the guard configured for the current panel
-        // (the "admin" guard on the admin panel, "web" on the user panel).
         Filament::auth()->logout();
+        Auth::guard('web')->logout();
 
-        // regenerate() rotates the session id and CSRF token (matching the
-        // security posture of invalidate()) but preserves the data belonging
-        // to any other guard still authenticated in this browser.
-        session()->regenerate();
+        session()->invalidate();
+        session()->regenerateToken();
 
-        return app(LogoutResponse::class);
+        return redirect()->route('login');
     }
 }

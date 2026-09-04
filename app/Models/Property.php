@@ -88,4 +88,9 @@ class Property extends Model
     {
         return $this->hasMany(PropertyInquiry::class, 'property_id', 'property_id');
     }
+
+    public function valuationRequests(): HasMany
+    {
+        return $this->hasMany(ValuationRequest::class, 'property_id', 'property_id');
+    }
 }

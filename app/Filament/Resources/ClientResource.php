@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\ClientResource\Pages;
 use App\Models\Client;
 use Filament\Actions;
@@ -17,11 +18,18 @@ use Filament\Tables\Table;
 
 class ClientResource extends Resource
 {
+    use AuthorizesViaRole;
+
     protected static ?string $model = Client::class;
 
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'full_name';
+
+    protected static function permissionKey(): string
+    {
+        return 'clients';
+    }
 
     public static function getNavigationGroup(): string|null
     {
