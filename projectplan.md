@@ -112,9 +112,29 @@ portal experience that existed before now); new signups choose explicitly.
 None of these exist today beyond what's noted. Each is independent — can be
 built and shipped on its own.
 
-- [ ] **Finance ledger**: Cash Book, general Ledger, Profit & Loss, Balance Sheet,
-      Budget Planning, Invoices — today only `PaymentReceipt` (Annex-I) exists;
-      this is proper double-entry-adjacent bookkeeping on top of it
+- [x] **Finance ledger** — DONE. Built a real double-entry core rather than
+      four disconnected screens: `finance_accounts` (chart of accounts),
+      `finance_transactions` + `finance_transaction_lines` (every posting is
+      balanced debit=credit, enforced in `FinanceTransaction::postBalanced()`,
+      never bypassable from the UI). Cash Book, Ledger, Profit & Loss, and
+      Balance Sheet are all just different queries over that same data,
+      living on one "Financial Reports" page with a shared date-range filter.
+      `PaymentReceipt` (Annex-I) now auto-posts to the ledger the moment it's
+      created (`PaymentReceiptObserver`) — existing income flows in with zero
+      manual re-entry. Added `PaymentVoucherResource` (outgoing payments —
+      approving one posts Debit expense / Credit Cash), `InvoiceResource`
+      (line items, auto-totaled, PDF export), and `BudgetResource`
+      (allocated vs. actual vs. variance per account per period). New
+      permissions (`finance_accounts`, `budgets`, `invoices`, `vouchers`,
+      `finance_reports.view`) wired so Finance Manager gets full control,
+      MD/GM/Admin get view-only oversight, everyone else sees nothing.
+      Verified: the balance/movement math, the unbalanced-transaction guard,
+      receipt auto-posting, and voucher approve-and-post all confirmed
+      correct against real data in rolled-back transactions; every resource
+      and the reports page mount and render cleanly for every role.
+      **Deferred**: Payroll (the proposal lists it under both Finance and HR;
+      it's fundamentally an employee-comp feature, so it'll land with the HR
+      module instead of being split across both).
 - [ ] **HR module**: Employee management (beyond the current bare `Staff` directory),
       Attendance, Leave, Payroll, Performance Review, Employee Documents, Contracts
 - [ ] **Engineering / Construction project management**: Project registration,

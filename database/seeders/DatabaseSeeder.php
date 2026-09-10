@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ProvinceSeeder::class,              // provinces → districts → municipalities → wards (no dependencies)
             RolesSeeder::class,                 // roles (no dependencies)
+            FinanceAccountsSeeder::class,        // chart of accounts (no dependencies)
             DocumentTypesSeeder::class,          // document_types (no dependencies)
             PropertyFeatureTypesSeeder::class,   // property_feature_types (no dependencies)
             ServiceTypesSeeder::class,           // service_types (no dependencies)

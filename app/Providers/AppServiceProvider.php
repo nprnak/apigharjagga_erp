@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Auth\FilamentLogoutController;
+use App\Models\KycVerification;
+use App\Models\PaymentReceipt;
+use App\Observers\KycVerificationObserver;
+use App\Observers\PaymentReceiptObserver;
 use Carbon\CarbonImmutable;
 use Filament\Auth\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Date;
@@ -28,7 +32,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
-        \App\Models\KycVerification::observe(\App\Observers\KycVerificationObserver::class);
+        KycVerification::observe(KycVerificationObserver::class);
+        PaymentReceipt::observe(PaymentReceiptObserver::class);
     }
 
     /**

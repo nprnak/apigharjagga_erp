@@ -85,6 +85,16 @@ class Role extends Model
             'payments.view' => 'View Payment Receipts',
             'payments.manage' => 'Manage Payment Receipts',
             'system.audit_logs' => 'View Audit Logs',
+            'finance_accounts.view' => 'View Chart of Accounts',
+            'finance_accounts.manage' => 'Manage Chart of Accounts',
+            'budgets.view' => 'View Budgets',
+            'budgets.manage' => 'Manage Budgets',
+            'invoices.view' => 'View Invoices',
+            'invoices.manage' => 'Manage Invoices',
+            'vouchers.view' => 'View Payment Vouchers',
+            'vouchers.manage' => 'Manage Payment Vouchers',
+            'vouchers.approve' => 'Approve Payment Vouchers',
+            'finance_reports.view' => 'View Cash Book, Ledger, P&L & Balance Sheet',
         ];
     }
 }
