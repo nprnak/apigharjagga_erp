@@ -128,12 +128,34 @@ portal experience that existed before now); new signups choose explicitly.
       right property) and the resubmit-after-rejection edge case (reuses
       the same row via the DB's unique constraint rather than erroring or
       duplicating) against real data in a rolled-back transaction.
-- [ ] Investor: investment-opportunity views, market insight/analytics — net new,
-      no backing data model yet; scope this once we know what "analytics" should show
-- [ ] Tenant: rental listing search, pay rent online, maintenance requests — net
-      new; there's currently no lease/rental-agreement or maintenance-ticket model
-      (rent payments would extend `PaymentReceipt`/`Agreement`, maintenance requests
-      would likely reuse `Complaint` or need a small new model)
+- [x] Investor: curated investment-opportunity listing view. Built
+      `MyInvestmentResource` (User panel, gated to `client_type === 'investor'`)
+      over the existing `PropertyListing` model rather than a new data model —
+      `purpose_of_listing = 'investment'` was already a valid value on the
+      listing wizard, just never surfaced anywhere. Read-only (`canCreate()`
+      false); a "View & Enquire" action links out to the existing public
+      property detail page, reusing its inquiry form instead of building a new
+      lead-capture mechanism. **Deferred**: "market insight/analytics" — no
+      concrete scope was given for what that should show, and no backing data
+      model exists to compute it from; revisit once there's a specific
+      question to answer (e.g. rental yield, price-history trend).
+- [x] Tenant: curated rental listing search. Built `MyRentalResource` (User
+      panel, gated to `client_type === 'tenant'`), same pattern as Investor
+      above — queries `PropertyListing` where `purpose_of_listing` is `rent`
+      or `lease` (both already existed), shows `rental_amount`. **Deferred**:
+      pay rent online and maintenance requests both need an active
+      lease/tenancy record (who is renting *which specific unit*, for what
+      term) that doesn't exist yet in the schema — this resource only covers
+      the "browse what's available" half of the brief. Paying rent would
+      extend `PaymentReceipt`, maintenance requests would likely reuse
+      `Complaint` or need a small new model, but both are premature without
+      the tenancy record they'd hang off of.
+      Verified (both resources): `canViewAny()` checked against every
+      `client_type` (owner/buyer/investor/tenant/agent) — each sees only its
+      own resource; list pages render cleanly with zero data (empty state);
+      view pages render correctly against a real investment and a real rental
+      listing created in a rolled-back transaction, with price/rent
+      formatting confirmed correct.
 
 ## Phase 3 — New Back-Office Modules — **DONE**
 
