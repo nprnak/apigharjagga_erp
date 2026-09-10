@@ -105,6 +105,11 @@ class Role extends Model
             'payroll.approve' => 'Finalize Payroll & Post to Ledger',
             'performance.view' => 'View Performance Reviews',
             'performance.manage' => 'Manage Performance Reviews',
+            'projects.view' => 'View Engineering/Construction Projects',
+            'projects.manage' => 'Manage Projects (Create/Edit, Milestones, BOQ)',
+            'projects.log' => 'Log Site Visits, Progress, Materials & Inspections',
+            'contractors.view' => 'View Contractors',
+            'contractors.manage' => 'Manage Contractors',
         ];
     }
 }

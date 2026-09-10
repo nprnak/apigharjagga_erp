@@ -107,10 +107,13 @@ portal experience that existed before now); new signups choose explicitly.
       (rent payments would extend `PaymentReceipt`/`Agreement`, maintenance requests
       would likely reuse `Complaint` or need a small new model)
 
-## Phase 3 — New Back-Office Modules
+## Phase 3 — New Back-Office Modules — **DONE**
 
-None of these exist today beyond what's noted. Each is independent — can be
-built and shipped on its own.
+All three modules (Finance ledger, HR, Engineering/Construction PM) built
+and each independently verified against real data in rolled-back
+transactions. Finance and HR/Payroll and Projects/Payment Tracking all
+share the same double-entry ledger core rather than three disconnected
+money-tracking systems.
 
 - [x] **Finance ledger** — DONE. Built a real double-entry core rather than
       four disconnected screens: `finance_accounts` (chart of accounts),
@@ -165,10 +168,31 @@ built and shipped on its own.
       (correctly skipping staff with no salary set) all checked against
       real data in a rolled-back transaction — cash decreased by exactly
       the posted payroll total.
-- [ ] **Engineering / Construction project management**: Project registration,
-      Engineer assignment, Site visits, Milestones, BOQ, Contractor management,
-      Material tracking, Inspection reports (distinct from Annex-D site inspections,
-      which are pre-listing not construction-phase), Payment tracking
+- [x] **Engineering / Construction project management** — DONE, and Phase 3
+      is now complete. `ProjectResource` is the hub (project registration,
+      client + engineer assignment) with seven relation-manager tabs:
+      Milestones, Site Visits, Progress Log, BOQ, Contractors, Material
+      Records, and Inspection Reports (the last deliberately a new
+      `project_inspection_reports` table — distinct from the existing
+      Annex-D `site_inspections`, which are pre-listing property checks,
+      not construction-phase quality inspections). Added a standalone
+      `ContractorResource` directory since the same contractor works
+      across multiple projects. "Payment Tracking" reuses the existing
+      `PaymentVoucher` → Finance ledger flow rather than a second, parallel
+      money-tracking system — a voucher just optionally links to the
+      project it was spent on (`payment_vouchers.project_id`).
+      Permission split mirrors the inspections.schedule/conduct pattern
+      from Phase 0: `projects.manage` (Technical Manager, GM, Admin) covers
+      registering projects, milestones, BOQ, and contractor assignment;
+      `projects.log` (also Site Engineer) covers field data entry — site
+      visits, progress updates, material records, inspection reports —
+      without needing full management rights. MD gets view-only oversight;
+      Finance Manager has no project access (their involvement is via the
+      voucher itself). Verified: RBAC gating for all 6 relevant roles,
+      every relation-manager tab, and a full data flow (milestones, site
+      visit, materials, contractor assignment, BOQ, plus a project-linked
+      voucher posting through the ledger) against real data in a
+      rolled-back transaction — cash decreased by exactly the voucher amount.
 
 ## Phase 4 — Corporate Website + CMS
 

@@ -7,6 +7,7 @@ use App\Filament\Resources\PaymentVoucherResource\Pages;
 use App\Models\FinanceAccount;
 use App\Models\FinanceTransaction;
 use App\Models\PaymentVoucher;
+use App\Models\Project;
 use App\Models\Staff;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
@@ -50,7 +51,7 @@ class PaymentVoucherResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['account', 'approvedBy']);
+        return parent::getEloquentQuery()->with(['account', 'approvedBy', 'project']);
     }
 
     public static function form(Schema $schema): Schema
@@ -76,6 +77,11 @@ class PaymentVoucherResource extends Resource
                         ->label('Expense Category')
                         ->options(fn () => FinanceAccount::where('account_type', 'expense')->orderBy('account_code')->pluck('account_name', 'account_id'))
                         ->required()
+                        ->searchable(),
+                    Select::make('project_id')
+                        ->label('Project (optional)')
+                        ->helperText('Link this payment to an engineering/construction project')
+                        ->options(fn () => Project::pluck('project_name', 'project_id'))
                         ->searchable(),
                     TextInput::make('amount')
                         ->numeric()
@@ -114,6 +120,9 @@ class PaymentVoucherResource extends Resource
                     ->label('Payee'),
                 Tables\Columns\TextColumn::make('account.account_name')
                     ->label('Category'),
+                Tables\Columns\TextColumn::make('project.project_name')
+                    ->label('Project')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('NPR')
                     ->sortable(),

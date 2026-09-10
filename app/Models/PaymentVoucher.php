@@ -15,6 +15,7 @@ class PaymentVoucher extends Model
         'payee_name',
         'purpose',
         'account_id',
+        'project_id',
         'amount',
         'mode_of_payment',
         'cheque_no',
@@ -34,6 +35,11 @@ class PaymentVoucher extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(FinanceAccount::class, 'account_id', 'account_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'project_id', 'project_id');
     }
 
     public function approvedBy(): BelongsTo

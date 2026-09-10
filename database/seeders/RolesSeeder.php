@@ -38,6 +38,7 @@ class RolesSeeder extends Seeder
                 'finance_accounts.view', 'budgets.view', 'invoices.view',
                 'vouchers.view', 'finance_reports.view',
                 'attendance.view', 'leave.view', 'payroll.view', 'performance.view',
+                'projects.view', 'contractors.view',
             ],
             'General Manager' => [
                 'users.view', 'clients.view', 'clients.manage',
@@ -60,6 +61,7 @@ class RolesSeeder extends Seeder
                 'leave.view', 'leave.manage', 'leave.approve',
                 'performance.view', 'performance.manage',
                 'payroll.view',
+                'projects.view', 'projects.manage', 'contractors.view', 'contractors.manage',
             ],
 
             // Finance & Accounts
@@ -90,12 +92,15 @@ class RolesSeeder extends Seeder
                 'verifications.view', 'verifications.manage',
                 'inspections.view', 'inspections.schedule',
                 'complaints.view',
+                'projects.view', 'projects.manage', 'projects.log',
+                'contractors.view', 'contractors.manage',
             ],
             'Site Engineer / Survey Officer' => [
                 'properties.view',
                 'inspections.view', 'inspections.conduct',
                 'valuations.view',
                 'complaints.view',
+                'projects.view', 'projects.log',
             ],
             'Valuation Officer' => [
                 'clients.view', 'properties.view',
