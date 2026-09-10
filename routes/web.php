@@ -15,12 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/__test-login/{email}', function (string $email) {
-    $user = \App\Models\User::where('email', $email)->firstOrFail();
-    \Illuminate\Support\Facades\Auth::guard('admin')->login($user);
-    return 'ok';
-});
-
 Route::get('/', [MarketplaceController::class, 'landing'])->name('home');
 
 // Public marketplace pages

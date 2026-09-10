@@ -50,7 +50,7 @@ class SiteInspectionResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->with(['property', 'inspector', 'reviewer']);
         $user = auth()->user();
 
         if (! $user) {
