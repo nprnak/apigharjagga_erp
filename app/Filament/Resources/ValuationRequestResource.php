@@ -19,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ValuationRequestResource extends Resource
 {
@@ -33,6 +34,21 @@ class ValuationRequestResource extends Resource
     protected static function permissionKey(): string
     {
         return 'valuations';
+    }
+
+    /**
+     * The Reports relation manager (draft/approve valuation reports) only
+     * renders on this Edit page, so anyone who can assign, conduct, or
+     * review a valuation needs to reach it — not just holders of the
+     * blanket 'valuations.manage' permission. The relation manager and
+     * this page's own row actions still gate each action individually.
+     */
+    public static function canEdit(Model $record): bool
+    {
+        return static::userHasPermission('valuations.manage')
+            || static::userHasPermission('valuations.assign')
+            || static::userHasPermission('valuations.conduct')
+            || static::userHasPermission('valuations.review');
     }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
@@ -144,7 +160,7 @@ class ValuationRequestResource extends Resource
                     ->label('Assign')
                     ->icon('heroicon-o-user-plus')
                     ->color('info')
-                    ->visible(fn () => static::userHasPermission('valuations.manage'))
+                    ->visible(fn () => static::userHasPermission('valuations.assign'))
                     ->schema([
                         Select::make('assigned_valuator_staff_id')
                             ->label('Valuer/Surveyor')
@@ -162,7 +178,7 @@ class ValuationRequestResource extends Resource
                     ->label('Schedule Visit')
                     ->icon('heroicon-o-calendar-days')
                     ->color('warning')
-                    ->visible(fn (ValuationRequest $record) => static::userHasPermission('valuations.manage') && $record->status === 'received')
+                    ->visible(fn (ValuationRequest $record) => static::userHasPermission('valuations.assign') && $record->status === 'received')
                     ->schema([
                         DatePicker::make('field_visit_date')
                             ->required(),
@@ -184,7 +200,7 @@ class ValuationRequestResource extends Resource
                     ->label('Start Valuation')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn (ValuationRequest $record) => static::userHasPermission('valuations.manage') && $record->status === 'site_visit_scheduled')
+                    ->visible(fn (ValuationRequest $record) => static::userHasPermission('valuations.conduct') && $record->status === 'site_visit_scheduled')
                     ->requiresConfirmation()
                     ->action(function (ValuationRequest $record): void {
                         $record->update(['status' => 'in_progress']);

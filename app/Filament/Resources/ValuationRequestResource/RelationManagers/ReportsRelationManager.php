@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ValuationRequestResource\RelationManagers;
 
 use App\Models\Staff;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions;
 use Filament\Forms\Components\Placeholder;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -23,6 +25,14 @@ class ReportsRelationManager extends RelationManager
     protected static string $relationship = 'reports';
 
     protected static ?string $title = 'Valuation Reports';
+
+    protected static function userCan(string $permission): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::guard('admin')->user();
+
+        return (bool) $user?->hasPermission($permission);
+    }
 
     private static function calculateAmount(array $data): float
     {
@@ -137,6 +147,7 @@ class ReportsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Actions\CreateAction::make()
+                    ->visible(fn () => static::userCan('valuations.conduct') || static::userCan('valuations.manage'))
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['property_id'] = $this->getOwnerRecord()->property_id;
                         $data['valuator_staff_id'] ??= $this->getOwnerRecord()->assigned_valuator_staff_id;
@@ -149,12 +160,13 @@ class ReportsRelationManager extends RelationManager
             ])
             ->recordActions([
                 Actions\EditAction::make()
+                    ->visible(fn (Model $record) => ($record->approval_status === 'draft' && (static::userCan('valuations.conduct') || static::userCan('valuations.manage'))) || static::userCan('valuations.manage'))
                     ->mutateFormDataUsing(fn (array $data): array => [...$data, 'valuated_amount' => self::calculateAmount($data)]),
                 Actions\Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
-                    ->visible(fn (Model $record) => $record->approval_status === 'pending_approval')
+                    ->visible(fn (Model $record) => $record->approval_status === 'pending_approval' && (static::userCan('valuations.review') || static::userCan('valuations.manage')))
                     ->requiresConfirmation()
                     ->schema([
                         Select::make('approved_by_staff_id')
@@ -188,7 +200,7 @@ class ReportsRelationManager extends RelationManager
                     ->label('Submit for Approval')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
-                    ->visible(fn (Model $record) => $record->approval_status === 'draft')
+                    ->visible(fn (Model $record) => $record->approval_status === 'draft' && (static::userCan('valuations.conduct') || static::userCan('valuations.manage')))
                     ->requiresConfirmation()
                     ->action(function (Model $record): void {
                         $record->update(['approval_status' => 'pending_approval']);
@@ -198,7 +210,7 @@ class ReportsRelationManager extends RelationManager
                     ->label('Reject')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Model $record) => $record->approval_status === 'pending_approval')
+                    ->visible(fn (Model $record) => $record->approval_status === 'pending_approval' && (static::userCan('valuations.review') || static::userCan('valuations.manage')))
                     ->requiresConfirmation()
                     ->action(function (Model $record): void {
                         $record->update(['approval_status' => 'rejected']);
@@ -212,7 +224,8 @@ class ReportsRelationManager extends RelationManager
                         Storage::disk('public')->path($record->report_file_ref),
                         $record->report_no.'.pdf'
                     )),
-                Actions\DeleteAction::make(),
+                Actions\DeleteAction::make()
+                    ->visible(fn () => static::userCan('valuations.manage')),
             ]);
     }
 }

@@ -16,6 +16,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ComplaintResource extends Resource
 {
@@ -35,7 +36,7 @@ class ComplaintResource extends Resource
         return 'heroicon-o-exclamation-triangle';
     }
 
-    public static function getNavigationGroup(): string|null
+    public static function getNavigationGroup(): ?string
     {
         return 'Complaints';
     }
@@ -50,7 +51,7 @@ class ComplaintResource extends Resource
         return 'warning';
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['client', 'property']);
     }
@@ -150,7 +151,7 @@ class ComplaintResource extends Resource
                     ->label('Assign')
                     ->icon('heroicon-o-user-plus')
                     ->color('info')
-                    ->visible(fn (Complaint $record) => static::userCan('manage'))
+                    ->visible(fn (Complaint $record) => static::userCan('assign'))
                     ->schema([
                         Select::make('assigned_officer_staff_id')
                             ->label('Officer')
@@ -171,7 +172,7 @@ class ComplaintResource extends Resource
                     ->label('Resolve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Complaint $record) => static::userCan('manage') && ! in_array($record->status, ['resolved', 'closed'], true))
+                    ->visible(fn (Complaint $record) => static::userCan('resolve') && ! in_array($record->status, ['resolved', 'closed'], true))
                     ->requiresConfirmation()
                     ->schema([
                         Textarea::make('corrective_action_taken')

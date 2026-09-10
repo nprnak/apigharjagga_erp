@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class PropertyResource extends Resource
 {
@@ -39,7 +40,7 @@ class PropertyResource extends Resource
         return 'heroicon-o-home-modern';
     }
 
-    public static function getNavigationGroup(): string|null
+    public static function getNavigationGroup(): ?string
     {
         return 'Properties';
     }
@@ -54,7 +55,7 @@ class PropertyResource extends Resource
         return 'warning';
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         // Municipality is stored as text on addresses, not as a relationship.
         return parent::getEloquentQuery()->with(['user', 'address']);
@@ -272,6 +273,7 @@ class PropertyResource extends Resource
             ->icon('heroicon-o-check-circle')
             ->color('success')
             ->requiresConfirmation()
+            ->visible(fn () => static::userHasPermission('properties.approve'))
             ->hidden(fn (Property $record) => $record->approval_status === 'approved')
             ->action(function (Property $record) {
                 $record->update([
@@ -290,6 +292,7 @@ class PropertyResource extends Resource
             ->icon('heroicon-o-x-circle')
             ->color('danger')
             ->requiresConfirmation()
+            ->visible(fn () => static::userHasPermission('properties.approve'))
             ->hidden(fn (Property $record) => $record->approval_status === 'rejected')
             ->action(function (Property $record) {
                 $record->update([
@@ -334,9 +337,9 @@ class PropertyResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'approved' => 'success',
-                        'pending'  => 'warning',
+                        'pending' => 'warning',
                         'rejected' => 'danger',
-                        default    => 'gray',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -393,9 +396,9 @@ class PropertyResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListProperties::route('/'),
+            'index' => Pages\ListProperties::route('/'),
             'create' => Pages\CreateProperty::route('/create'),
-            'edit'   => Pages\EditProperty::route('/{record}/edit'),
+            'edit' => Pages\EditProperty::route('/{record}/edit'),
         ];
     }
 }

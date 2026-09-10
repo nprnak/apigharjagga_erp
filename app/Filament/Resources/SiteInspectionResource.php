@@ -17,6 +17,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class SiteInspectionResource extends Resource
 {
@@ -31,17 +33,32 @@ class SiteInspectionResource extends Resource
         return 'inspections';
     }
 
+    /**
+     * Creating a record schedules the inspection (assigns property + inspector);
+     * editing it is where the field inspector fills in findings and conducts it.
+     * Both remain available to holders of the blanket 'inspections.manage'.
+     */
+    public static function canCreate(): bool
+    {
+        return static::userHasPermission('inspections.schedule') || static::userHasPermission('inspections.manage');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::userHasPermission('inspections.conduct') || static::userHasPermission('inspections.manage');
+    }
+
     public static function getNavigationIcon(): string|\BackedEnum|null
     {
         return 'heroicon-o-map-pin';
     }
 
-    public static function getNavigationGroup(): string|null
+    public static function getNavigationGroup(): ?string
     {
         return 'Verification & Inspection';
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['property', 'inspector']);
     }
