@@ -13,12 +13,15 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RolePermissionSeeder::class);
+
         User::updateOrCreate(
             ['email' => 'admin@admin.com'],
             [
                 'name' => 'Admin User',
                 'email_verified_at' => now(),
                 'password' => Hash::make('Admin@123'),
+                'role' => 'admin',
             ],
         );
     }

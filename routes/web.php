@@ -55,7 +55,9 @@ Route::middleware('auth')->get('/user/dashboard', function (Request $request) {
     return redirect($target);
 })->name('dashboard');
 
-Route::middleware(['auth:admin', 'admin'])->group(function () {
+// "role:admin,web" -> require the "admin" Spatie role, checked on the "web"
+// guard (that's where the "admin" role is stored — see App\Models\User).
+Route::middleware(['auth:admin', 'role:admin,web'])->group(function () {
     Route::post('/admin/approve', [AdminApprovalController::class, 'approve'])->name('admin.approve');
     Route::post('/admin/reject', [AdminApprovalController::class, 'reject'])->name('admin.reject');
     Route::get('/admin/kyc-verifications/{id}/pdf', [KycController::class, 'downloadPdf'])->name('admin.kyc.pdf');

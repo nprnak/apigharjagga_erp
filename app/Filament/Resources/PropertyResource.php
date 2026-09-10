@@ -3,8 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PropertyResource\Pages;
+use App\Filament\Resources\SiteInspections\SiteInspectionResource;
 use App\Models\Property;
 use Filament\Actions;
+use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -12,6 +14,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Actions as SchemaActions;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -57,14 +60,45 @@ class PropertyResource extends Resource
                 // Review & visibility come first — this is what an admin opens
                 // the record for, so it spans the full width above the fold.
                 Section::make('Review & Visibility')
-                    ->description('Control approval state and whether this property appears on the public marketplace.')
+                    ->description('Control approval state and whether this property appears on the public marketplace. Approval and marketplace visibility require a completed & reviewed site inspection.')
                     ->icon('heroicon-o-shield-check')
                     ->columns(3)
                     ->columnSpanFull()
                     ->schema([
+                        Placeholder::make('site_inspection_gate')
+                            ->label('Site Inspection')
+                            ->content(function (?Property $record) {
+                                if (! $record) {
+                                    return '—';
+                                }
+
+                                $latest = $record->latestSiteInspection();
+
+                                if (! $latest) {
+                                    return 'Not started — complete a site inspection before approving.';
+                                }
+
+                                return match ($latest->status) {
+                                    'draft' => 'In progress (draft) — finish and submit the inspection, then have it reviewed.',
+                                    'submitted' => 'Submitted — awaiting review by '.str($latest->submitted_to)->headline().'.',
+                                    'reviewed' => 'Completed & reviewed ✓ — this property can be approved.',
+                                    default => ucfirst($latest->status),
+                                };
+                            })
+                            ->columnSpanFull(),
+                        SchemaActions::make([
+                            static::siteInspectionAction(),
+                        ])
+                            ->visible(fn (?Property $record) => $record !== null)
+                            ->columnSpanFull(),
                         Select::make('approval_status')
                             ->label('Approval Status')
                             ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
+                            ->disableOptionWhen(fn (string $value, ?Property $record) => $value === 'approved'
+                                && ! $record?->hasCompletedSiteInspection())
+                            ->helperText(fn (?Property $record) => $record && ! $record->hasCompletedSiteInspection()
+                                ? 'Approval requires a completed & reviewed site inspection.'
+                                : null)
                             ->required()
                             ->native(false),
                         Select::make('status')
@@ -78,7 +112,10 @@ class PropertyResource extends Resource
                             ->native(false),
                         Toggle::make('is_listed')
                             ->label('Show on Marketplace')
-                            ->helperText('When off, this property is hidden from the public site and user listings.')
+                            ->helperText(fn (?Property $record) => ($record && ! $record->is_listed && ! $record->hasCompletedSiteInspection())
+                                ? 'Requires a completed & reviewed site inspection first.'
+                                : 'When off, this property is hidden from the public site and user listings.')
+                            ->disabled(fn (?Property $record) => $record && ! $record->is_listed && ! $record->hasCompletedSiteInspection())
                             ->onColor('success')
                             ->offColor('danger'),
                     ]),
@@ -214,6 +251,30 @@ class PropertyResource extends Resource
                                     ->content(fn (?Property $record) => $record?->address?->full_address_text ?? '—'),
                             ]),
 
+                        Section::make('Site Inspection')
+                            ->icon('heroicon-o-clipboard-document-check')
+                            ->schema([
+                                Placeholder::make('site_inspection_status')
+                                    ->label('Status')
+                                    ->content(function (?Property $record) {
+                                        $latest = $record?->latestSiteInspection();
+
+                                        if (! $latest) {
+                                            return 'Not started';
+                                        }
+
+                                        return match ($latest->status) {
+                                            'draft' => 'Draft (in progress)',
+                                            'submitted' => 'Submitted to '.str($latest->submitted_to)->headline().' — awaiting review',
+                                            'reviewed' => 'Reviewed ✓',
+                                            default => ucfirst($latest->status),
+                                        };
+                                    }),
+                                SchemaActions::make([
+                                    static::siteInspectionAction(),
+                                ]),
+                            ]),
+
                         Section::make('Record')
                             ->icon('heroicon-o-clock')
                             ->schema([
@@ -259,6 +320,13 @@ class PropertyResource extends Resource
             ->color('success')
             ->requiresConfirmation()
             ->hidden(fn (Property $record) => $record->approval_status === 'approved')
+            // A property can only be verified/approved (and therefore shown
+            // on the public marketplace) once its site inspection has been
+            // completed and reviewed — see Property::hasCompletedSiteInspection().
+            ->disabled(fn (Property $record) => ! $record->hasCompletedSiteInspection())
+            ->tooltip(fn (Property $record) => $record->hasCompletedSiteInspection()
+                ? null
+                : 'Requires a completed & reviewed site inspection before this property can be approved.')
             ->action(function (Property $record) {
                 $record->update([
                     'approval_status' => 'approved',
@@ -266,6 +334,39 @@ class PropertyResource extends Resource
                     'is_listed' => true,
                 ]);
                 Notification::make()->title('Property approved & listed')->success()->send();
+            });
+    }
+
+    /**
+     * Links out to the Site Inspection resource for this property — to its
+     * latest report if one exists, otherwise straight to a pre-filled
+     * "create" form (only offered to users who can actually create one).
+     */
+    public static function siteInspectionAction(): Action
+    {
+        return Action::make('siteInspection')
+            ->label(fn (Property $record) => $record->siteInspections()->exists() ? 'Site Inspection' : 'Start Site Inspection')
+            ->icon('heroicon-o-clipboard-document-check')
+            ->color('info')
+            ->visible(fn () => auth()->user()?->can('ViewAny:SiteInspection') || auth()->user()?->can('Create:SiteInspection'))
+            ->url(function (?Property $record) {
+                if (! $record) {
+                    return SiteInspectionResource::getUrl('index');
+                }
+
+                $latest = $record->latestSiteInspection();
+
+                if ($latest && auth()->user()?->can('View:SiteInspection')) {
+                    return SiteInspectionResource::getUrl('edit', ['record' => $latest]);
+                }
+
+                if (auth()->user()?->can('Create:SiteInspection')) {
+                    // Extra route params are not always kept as a query string by
+                    // Filament's getUrl(), so append property_id explicitly.
+                    return SiteInspectionResource::getUrl('create').'?property_id='.$record->getKey();
+                }
+
+                return SiteInspectionResource::getUrl('index');
             });
     }
 
@@ -315,6 +416,24 @@ class PropertyResource extends Resource
                 Tables\Columns\TextColumn::make('address.municipality')
                     ->label('Municipality')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('latest_site_inspection_status')
+                    ->label('Site Inspection')
+                    ->badge()
+                    ->state(fn (Property $record) => $record->latestSiteInspection()?->status ?? 'none')
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'reviewed' => 'Reviewed',
+                        'submitted' => 'Submitted',
+                        'draft' => 'Draft',
+                        'none', null => 'Not started',
+                        default => ucfirst($state),
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'reviewed' => 'success',
+                        'submitted' => 'warning',
+                        'draft' => 'gray',
+                        default => 'danger',
+                    })
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('approval_status')
                     ->label('Approval')
                     ->badge()
@@ -336,7 +455,21 @@ class PropertyResource extends Resource
                     ->label('On Site')
                     ->onColor('success')
                     ->offColor('danger')
+                    // Can always be switched off, but switching it on requires
+                    // a completed & reviewed site inspection first.
+                    ->disabled(fn (Property $record) => ! $record->is_listed && ! $record->hasCompletedSiteInspection())
                     ->afterStateUpdated(function (Property $record, bool $state) {
+                        if ($state && ! $record->hasCompletedSiteInspection()) {
+                            $record->update(['is_listed' => false]);
+                            Notification::make()
+                                ->title('Cannot list this property yet')
+                                ->body('It needs a completed & reviewed site inspection first.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         Notification::make()
                             ->title($state ? 'Property is now visible on the marketplace' : 'Property hidden from the marketplace')
                             ->success()
@@ -361,6 +494,7 @@ class PropertyResource extends Resource
             ->actions([
                 static::approveAction(),
                 static::rejectAction(),
+                static::siteInspectionAction(),
                 Actions\EditAction::make(),
             ])
             ->bulkActions([

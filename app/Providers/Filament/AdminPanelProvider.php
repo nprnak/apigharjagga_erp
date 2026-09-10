@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\StatsOverview;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::Zinc,
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->databaseNotifications()
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn () => view('filament.custom-theme'),
@@ -48,9 +50,13 @@ class AdminPanelProvider extends PanelProvider
                     ->collapsed(false),
                 NavigationGroup::make('Properties')
                     ->collapsed(false),
+                NavigationGroup::make('Site Inspections')
+                    ->collapsed(false),
                 NavigationGroup::make('Inquiries & Leads')
                     ->collapsed(false),
                 NavigationGroup::make('Clients')
+                    ->collapsed(false),
+                NavigationGroup::make('Site Settings')
                     ->collapsed(false),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -73,6 +79,9 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+            ])
+            ->plugins([
+                FilamentShieldPlugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,

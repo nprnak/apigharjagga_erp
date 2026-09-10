@@ -50,6 +50,23 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // This form authenticates on the "web" guard, which only serves the
+        // user dashboard. Admin accounts must sign in through /admin/login
+        // (the "admin" guard) instead, so reject them here even though the
+        // credentials were valid. Checked explicitly per guard since Spatie's
+        // default-guard resolution is dynamic (see App\Models\User).
+        $user = Auth::user();
+        if ($user?->hasRole('admin', 'web') || $user?->hasRole('super_admin', 'admin')) {
+            Auth::guard('web')->logout();
+            $this->session()->invalidate();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Admin accounts must sign in from the admin panel login page.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

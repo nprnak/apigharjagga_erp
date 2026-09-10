@@ -17,7 +17,7 @@ class StatsOverview extends BaseWidget
         $pendingKyc      = KycVerification::where('status', 'pending')->count();
         $approvedKyc     = KycVerification::where('status', 'approved')->count();
         $pendingListings = Property::where('approval_status', 'pending')->count();
-        $totalUsers      = User::where('role', 'user')->count();
+        $totalUsers      = User::role('user', 'web')->count();
 
         return [
             Stat::make('Total Users', $totalUsers)

@@ -84,8 +84,9 @@ class MarketplaceController extends Controller
      * that a raw listing/property ID can't be guessed to view a hidden record).
      *
      * `is_listed` is an explicit admin-controlled switch (Admin Panel →
-     * Properties) independent of approval/status — a property can be
-     * approved yet hidden from the site, or vice versa.
+     * Properties) independent of approval/status — a property must still be
+     * admin-approved (which itself requires a reviewed site inspection) and
+     * explicitly marked visible before it appears on the public site.
      */
     private function visibleListingsQuery()
     {
@@ -97,10 +98,7 @@ class MarketplaceController extends Controller
             })
             ->whereHas('property', function ($q) {
                 $q->where('is_listed', true)
-                    ->where(function ($q2) {
-                        $q2->whereIn('approval_status', ['approved', 'pending'])
-                            ->orWhereIn('status', ['listed', 'draft']);
-                    });
+                    ->where('approval_status', 'approved');
             });
     }
 
