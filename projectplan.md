@@ -256,12 +256,50 @@ testimonial active-only filtering, job application linking, blog publish
 visibility, gallery image URLs, contact message creation) confirmed
 correct against real data in a rolled-back transaction.
 
-## Phase 5 — Reporting & Analytics
+## Phase 5 — Reporting & Analytics — **DONE**
 
-- [ ] Dedicated Reports section: Financial, Property, Valuation, Customer,
-      Employee, Project, Revenue reports (today only ad-hoc Filament widgets exist)
-- [ ] Expand `StatsOverview`/dashboard widgets per-role so each role's dashboard
-      reflects the "Dashboard Analytics" row of the permission matrix
+- [x] Dedicated Reports section — six pages under a new "Reports" nav group:
+      `PropertyReports` (status/type/approval breakdowns, 6-month listing
+      trend), `ValuationReports` (request status, issued-report mix, average
+      valuated amount per type, top valuators), `ClientReports` (client-type
+      mix, KYC status, 6-month registration trend), `EmployeeReports`
+      (department/employment-type mix, this month's attendance, leave
+      status), `ProjectReports` (status mix, milestone progress, and a
+      **BOQ-budgeted vs. actual-spend table per project** — the actual side
+      pulled from `payment_vouchers` linked to that project, so it reflects
+      real posted spend rather than a separate estimate), and
+      `RevenueReports` (month/year totals, by-category breakdown, 6-month
+      trend — built on the same `FinanceAccount::movementBetween()` the
+      Phase 3 Financial Reports page already uses, so the two never
+      disagree about what "revenue" means). "Financial Reports" itself
+      already exists as Phase 3's Cash Book/Ledger/P&L/Balance Sheet page —
+      not rebuilt here.
+      Deliberately reused each domain's **existing** `.view` permission
+      (`properties.view`, `valuations.view`, `clients.view`, `staff.view`,
+      `projects.view`, `finance_reports.view`) to gate the matching report
+      page instead of inventing a parallel `reports.*` permission set —
+      one less thing to keep in sync, and it naturally reproduces the
+      matrix's Operational/Client/Financial report-access split for free
+      (verified below).
+- [x] "Dashboard Analytics" (the permission matrix row, not the widget
+      class) — satisfied by giving each role the reports pages relevant to
+      what they already have `.view` access to, rather than cramming more
+      stat tiles onto the generic `StatsOverview` widget. A role sees
+      exactly the reports its existing permissions justify, with no
+      separate toggle to maintain.
+
+Verified: `canAccess()` gating checked for 6 roles across all 6 pages —
+Finance Manager gets Client/Employee/Revenue but not Property/Valuation/
+Project, Technical Manager gets everything except Revenue, Site Engineer
+gets Property/Valuation/Project but not Client/Employee/Revenue, exactly
+matching each role's existing permissions with no new gaps or overreach.
+Every page renders cleanly for Admin. The two riskiest queries — a raw
+SQL `JOIN` (top valuators by report count) and an aliased `withSum` across
+two relations (BOQ budgeted vs. actual project spend) — were exercised
+against real inserted rows in a rolled-back transaction and returned
+exactly the expected numbers, not just their empty-state branch (most
+tables are still near-empty in dev, so the plain render check alone
+wouldn't have caught a broken JOIN or aggregate).
 
 ## Deferred / Out of Scope for Now
 

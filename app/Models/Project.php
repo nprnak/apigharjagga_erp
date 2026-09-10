@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property-read float|null $boq_items_sum_amount Present only when loaded via withSum('boqItems', 'amount')
+ * @property-read float|null $vouchers_sum_amount Present only when loaded via the aliased withSum used in ProjectReports
+ */
 class Project extends Model
 {
     protected $primaryKey = 'project_id';
