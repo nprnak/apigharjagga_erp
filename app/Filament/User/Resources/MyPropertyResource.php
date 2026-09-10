@@ -2,10 +2,11 @@
 
 namespace App\Filament\User\Resources;
 
-use App\Filament\User\Resources\MyPropertyResource\Pages;
 use App\Filament\Support\LocationSelects;
+use App\Filament\User\Resources\MyPropertyResource\Pages;
 use App\Models\Property;
 use Filament\Actions;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -54,9 +55,22 @@ class MyPropertyResource extends Resource
             ->orderByDesc('property_id');
     }
 
+    /**
+     * Listing a property is an Owner action (see the RBAC matrix's "List
+     * Property" row). Agents will get the same access once the
+     * Power-of-Attorney verification flow exists to back it — until then,
+     * self-selecting "Agent" at signup must not grant listing rights.
+     */
+    public static function canViewAny(): bool
+    {
+        return Auth::user()?->client_type === 'owner';
+    }
+
     public static function canCreate(): bool
     {
-        return Auth::user()?->kycVerification?->status === 'approved';
+        $user = Auth::user();
+
+        return $user?->client_type === 'owner' && $user->kycVerification?->status === 'approved';
     }
 
     public static function form(Schema $schema): Schema
@@ -153,9 +167,9 @@ class MyPropertyResource extends Resource
         $palette = [
             'success' => ['#ecfdf5', '#a7f3d0', '#047857'],
             'warning' => ['#fef3c7', '#fde68a', '#92400e'],
-            'danger'  => ['#ffe4e6', '#fecdd3', '#be123c'],
-            'info'    => ['#eff6ff', '#bfdbfe', '#1d4ed8'],
-            'gray'    => ['#f1f5f9', '#e2e8f0', '#475569'],
+            'danger' => ['#ffe4e6', '#fecdd3', '#be123c'],
+            'info' => ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+            'gray' => ['#f1f5f9', '#e2e8f0', '#475569'],
         ];
 
         $color = $colors[$state] ?? 'gray';
@@ -170,7 +184,7 @@ class MyPropertyResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     public static function propertyDetailsFields(): array
     {
@@ -276,7 +290,7 @@ class MyPropertyResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     public static function locationFields(): array
     {
@@ -299,7 +313,7 @@ class MyPropertyResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     public static function financialFields(): array
     {
@@ -321,7 +335,7 @@ class MyPropertyResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     public static function mediaFields(): array
     {

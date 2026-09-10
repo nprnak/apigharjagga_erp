@@ -5,6 +5,10 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { route } from '@/route';
 import { computed, ref } from 'vue';
 
+const props = defineProps<{
+    clientTypeOptions: Record<string, string>;
+}>();
+
 const showPassword = ref(false);
 const showConfirm = ref(false);
 
@@ -13,6 +17,7 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    client_type: '',
 });
 
 const strength = computed(() => {
@@ -118,6 +123,23 @@ const inputClass = (hasError: boolean) =>
                                     :class="inputClass(Boolean(form.errors.email))"
                                 />
                                 <InputError class="mt-1.5" :message="form.errors.email" />
+                            </div>
+
+                            <div>
+                                <InputLabel for="reg-client-type" value="I am a..." class="mb-1.5 text-sm font-medium text-slate-500" />
+                                <select
+                                    id="reg-client-type"
+                                    v-model="form.client_type"
+                                    required
+                                    :aria-invalid="Boolean(form.errors.client_type)"
+                                    :class="inputClass(Boolean(form.errors.client_type))"
+                                >
+                                    <option value="" disabled>Select account type</option>
+                                    <option v-for="(label, value) in props.clientTypeOptions" :key="value" :value="value">
+                                        {{ label }}
+                                    </option>
+                                </select>
+                                <InputError class="mt-1.5" :message="form.errors.client_type" />
                             </div>
 
                             <div>

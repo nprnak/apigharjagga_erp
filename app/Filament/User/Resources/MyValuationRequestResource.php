@@ -47,9 +47,21 @@ class MyValuationRequestResource extends Resource
             ->with(['property', 'reports']);
     }
 
+    /**
+     * Requesting a valuation on your own property is an Owner action (see
+     * the RBAC matrix's "Request Valuation" row — Buyer/Investor/Tenant are
+     * not granted it).
+     */
+    public static function canViewAny(): bool
+    {
+        return Auth::user()?->client_type === 'owner';
+    }
+
     public static function canCreate(): bool
     {
-        return Auth::user()?->kycVerification?->status === 'approved';
+        $user = Auth::user();
+
+        return $user?->client_type === 'owner' && $user->kycVerification?->status === 'approved';
     }
 
     public static function form(Schema $schema): Schema

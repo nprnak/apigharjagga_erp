@@ -1,10 +1,30 @@
 @php
     $userId = auth()->id();
-    $activeListings = \App\Models\Property::where('user_id', $userId)->where('approval_status', 'approved')->count();
-    $pendingListings = \App\Models\Property::where('user_id', $userId)->where('approval_status', 'pending')->count();
-    $rejectedListings = \App\Models\Property::where('user_id', $userId)->where('approval_status', 'rejected')->count();
+    $isOwner = auth()->user()?->client_type === 'owner';
+    $activeListings = $isOwner ? \App\Models\Property::where('user_id', $userId)->where('approval_status', 'approved')->count() : 0;
+    $pendingListings = $isOwner ? \App\Models\Property::where('user_id', $userId)->where('approval_status', 'pending')->count() : 0;
+    $rejectedListings = $isOwner ? \App\Models\Property::where('user_id', $userId)->where('approval_status', 'rejected')->count() : 0;
 @endphp
 
+@unless($isOwner)
+    <div class="dash-card" style="padding: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+            <div style="width: 36px; height: 36px; border-radius: 0.625rem; background-color: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+                <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+            </div>
+            <span style="font-size: 0.875rem; font-weight: 600; color: #1e293b;">Browse the Marketplace</span>
+        </div>
+        <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b; line-height: 1.5;">
+            Dedicated {{ ucfirst(auth()->user()?->client_type ?? 'account') }} tools are on the way. For now, search live listings
+            on the public marketplace, or reach us directly for valuation, agreement, and complaint services.
+        </p>
+        <a href="{{ url('/properties') }}" style="margin-top: 0.75rem; display: inline-flex; font-size: 0.75rem; font-weight: 600; color: #2563eb; text-decoration: none;">
+            View Properties &rarr;
+        </a>
+    </div>
+@else
 <div class="dashboard-stats-grid">
     <!-- 1. Active Listings -->
     <a href="{{ url('/dashboard/my-properties') }}"
@@ -101,3 +121,4 @@
         </div>
     </a>
 </div>
+@endif

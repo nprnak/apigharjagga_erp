@@ -3,6 +3,7 @@
     $kyc = $user?->kycVerification;
     $status = $kyc?->status ?? 'unsubmitted';
     $isVerified = $status === 'approved';
+    $isOwner = $user?->client_type === 'owner';
     $initials = strtoupper(substr($user->name ?? 'U', 0, 2));
     $photoUrl = $kyc?->selfie_photo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($kyc->selfie_photo_path) : null;
 @endphp
@@ -40,24 +41,36 @@
             </div>
 
             <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #475569; line-height: 1.5; max-width: 580px;">
-                @if($isVerified)
+                @if($isOwner && $isVerified)
                     Your account is fully KYC verified. You are authorized to list properties and manage real estate applications.
-                @elseif($status === 'pending')
+                @elseif($isOwner && $status === 'pending')
                     Your Annex F verification documents have been submitted and are currently being reviewed by our administration. Once approved, you can start listing properties.
-                @elseif($status === 'rejected')
+                @elseif($isOwner && $status === 'rejected')
                     Your KYC submission requires corrections. Please review the admin remarks and resubmit to unlock property listings.
-                @else
+                @elseif($isOwner)
                     Please complete the KYC to list the property and connect with prospective buyers on the marketplace.
+                @elseif($isVerified)
+                    Your account is fully KYC verified. Browse the marketplace or start a request with our team any time.
+                @else
+                    Complete your KYC so we can verify your identity for agreements, valuations, and other services.
                 @endif
             </p>
 
             <div style="margin-top: 0.75rem;">
-                @if($isVerified)
+                @if($isOwner && $isVerified)
                     <a href="{{ url('/dashboard/my-properties/create') }}"
                        style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background-color: #10b981; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #ffffff; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                         <span>List a Property</span>
                         <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </a>
+                @elseif(! $isOwner && $isVerified)
+                    <a href="{{ url('/properties') }}"
+                       style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem; background-color: #10b981; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #ffffff; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <span>Browse Properties</span>
+                        <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                     </a>
                 @else
