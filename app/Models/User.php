@@ -85,18 +85,28 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * The Annex-F Client record (created by staff at a counter, or matched
-     * from a public intake form) that corresponds to this web login, found
-     * by matching this user's verified KYC citizenship number against
-     * `clients.citizenship_no`. There is no direct FK between the two
-     * tables — see the add_client_type_to_users_table migration for why —
-     * so a Buyer/Owner's own agreements and payment receipts (which hang
-     * off `Client`, not `User`) can only be found this way. Returns null
-     * until KYC is submitted with a citizenship number that matches an
-     * existing Client record.
+     * The Annex-F Client record that corresponds to this web login. There
+     * is no direct FK between the two tables — see the
+     * add_client_type_to_users_table migration for why — so this checks
+     * both ways a Client can end up linked to a User:
+     *   1. `clients.mobile_app_user_id` — set directly when this user
+     *      self-lists their first property (CreateMyProperty), the more
+     *      authoritative match since it was created for this exact user.
+     *   2. Citizenship-number match against a staff-entered Client (e.g. a
+     *      Buyer who was registered at the counter, or did KYC without
+     *      ever listing a property) — the only option when no direct link
+     *      exists yet.
+     * Returns null if neither resolves, meaning this user's agreements and
+     * payment receipts (which hang off Client, not User) can't be found yet.
      */
     public function resolvedClient(): ?Client
     {
+        $direct = Client::where('mobile_app_user_id', (string) $this->id)->first();
+
+        if ($direct) {
+            return $direct;
+        }
+
         $citizenshipNo = $this->kycVerification?->citizenship_no;
 
         if (! $citizenshipNo) {
@@ -104,6 +114,22 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return Client::where('citizenship_no', $citizenshipNo)->first();
+    }
+
+    public function powerOfAttorneys(): HasMany
+    {
+        return $this->hasMany(PowerOfAttorney::class, 'agent_user_id', 'id');
+    }
+
+    /**
+     * client_id values this Agent has an approved Power of Attorney for —
+     * i.e. which owners' properties they're authorized to manage.
+     *
+     * @return array<int, int>
+     */
+    public function approvedPoaOwnerClientIds(): array
+    {
+        return $this->powerOfAttorneys()->where('status', 'approved')->pluck('owner_client_id')->all();
     }
 
     public function staffRole(): BelongsTo

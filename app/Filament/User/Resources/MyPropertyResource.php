@@ -43,27 +43,43 @@ class MyPropertyResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+        $user = Auth::user();
 
-        $userId = Auth::id();
-        if (! $userId) {
+        if (! $user) {
             return $query->whereRaw('1 = 0');
         }
 
+        // Owners see what they submitted themselves; Agents additionally
+        // see properties belonging to any owner they hold an approved
+        // Power of Attorney for (see MyPowerOfAttorneyResource).
+        $approvedOwnerClientIds = $user->approvedPoaOwnerClientIds();
+
         return $query
-            ->where('user_id', $userId)
+            ->where(function (Builder $q) use ($user, $approvedOwnerClientIds) {
+                $q->where('user_id', $user->id);
+
+                if ($approvedOwnerClientIds !== []) {
+                    $q->orWhereIn('owner_client_id', $approvedOwnerClientIds);
+                }
+            })
             ->with(['photos', 'address'])
             ->orderByDesc('property_id');
     }
 
     /**
      * Listing a property is an Owner action (see the RBAC matrix's "List
-     * Property" row). Agents will get the same access once the
-     * Power-of-Attorney verification flow exists to back it — until then,
-     * self-selecting "Agent" at signup must not grant listing rights.
+     * Property" row). An Agent gets the same viewing/editing access to
+     * properties they hold an approved Power of Attorney for, scoped in
+     * getEloquentQuery() above — but not the ability to create a brand new
+     * listing on an owner's behalf; the self-service creation wizard below
+     * assumes the current user is the owner being registered.
      */
     public static function canViewAny(): bool
     {
-        return Auth::user()?->client_type === 'owner';
+        $user = Auth::user();
+
+        return $user?->client_type === 'owner'
+            || ($user?->client_type === 'agent' && $user->approvedPoaOwnerClientIds() !== []);
     }
 
     public static function canCreate(): bool

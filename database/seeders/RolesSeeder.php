@@ -39,6 +39,7 @@ class RolesSeeder extends Seeder
                 'vouchers.view', 'finance_reports.view',
                 'attendance.view', 'leave.view', 'payroll.view', 'performance.view',
                 'projects.view', 'contractors.view',
+                'poa.view',
             ],
             'General Manager' => [
                 'users.view', 'clients.view', 'clients.manage',
@@ -63,6 +64,7 @@ class RolesSeeder extends Seeder
                 'payroll.view',
                 'projects.view', 'projects.manage', 'contractors.view', 'contractors.manage',
                 'content.view', 'careers.view', 'site_documents.view', 'contact_messages.view',
+                'poa.view',
             ],
 
             // Finance & Accounts
@@ -152,6 +154,7 @@ class RolesSeeder extends Seeder
                 'kyc.view', 'kyc.manage',
                 'verifications.view', 'verifications.manage',
                 'agreements.view', 'agreements.manage',
+                'poa.view', 'poa.manage',
             ],
 
             // IT & Admin

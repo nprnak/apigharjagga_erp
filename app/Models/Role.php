@@ -118,6 +118,8 @@ class Role extends Model
             'site_documents.manage' => 'Manage Public Document Downloads',
             'contact_messages.view' => 'View Contact Messages',
             'contact_messages.manage' => 'Manage Contact Messages',
+            'poa.view' => 'View Power of Attorney Submissions',
+            'poa.manage' => 'Verify / Approve Power of Attorney',
         ];
     }
 }

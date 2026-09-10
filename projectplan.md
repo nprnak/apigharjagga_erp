@@ -96,10 +96,38 @@ portal experience that existed before now); new signups choose explicitly.
       Verified end-to-end with a rolled-back transaction: a matching KYC +
       Client + Agreement + Payment surfaced correctly in both resources, and
       cleanly returns empty (not an error) when no match exists yet.
-- [ ] Agent-on-behalf-of-owner: Power of Attorney upload + verification, scoped
-      access to only the properties they're authorized for — new data model needed
-      (no POA concept exists yet; this is *why* Agent doesn't get MyPropertyResource
-      access yet even though they're logically owner-adjacent)
+- [x] Agent-on-behalf-of-owner: Power of Attorney upload + verification, scoped
+      access to only the properties they're authorized for. New
+      `power_of_attorneys` table (agent_user_id, owner_client_id, document,
+      status) — scoped to `owner_client_id` rather than the owner's own
+      `user_id`, since an owner may have no web login at all (Client is the
+      only ownership reference guaranteed to exist regardless of intake
+      channel). `MyPowerOfAttorneyResource` (User panel, Agent only) lets an
+      agent identify the owner by mobile/citizenship number and upload the
+      signed document; admin `PowerOfAttorneyResource` (Document Officer /
+      Legal Coordinator — matches their explicit org-chart "Power of
+      Attorney verification" duty, MD/GM oversight) approves or rejects it.
+      Once approved, `MyPropertyResource` grants that agent the same
+      view/edit access to the owner's properties an owner would have,
+      scoped in `getEloquentQuery()` — but not the ability to create a new
+      listing on the owner's behalf, since the self-service creation wizard
+      assumes the current user *is* the owner; that's a reasonable further
+      extension, not built here.
+      **Found and fixed a real bug while building this**: `User::resolvedClient()`
+      (built in Phase 2 for Buyer/Owner agreements & payments) only checked
+      citizenship-number matching, but the self-service property-listing
+      flow (`CreateMyProperty`) links `User` → `Client` a different way —
+      via `clients.mobile_app_user_id`, set directly when a user lists
+      their first property. An owner who self-listed a property but whose
+      KYC citizenship number didn't happen to match could have been invisible
+      to their own `MyAgreementResource`/`MyPaymentResource`. Fixed to check
+      the direct `mobile_app_user_id` link first, falling back to
+      citizenship-number matching for clients registered other ways.
+      Verified: RBAC gating for the admin resource; the full flow (agent
+      blocked before approval, granted immediately after, sees exactly the
+      right property) and the resubmit-after-rejection edge case (reuses
+      the same row via the DB's unique constraint rather than erroring or
+      duplicating) against real data in a rolled-back transaction.
 - [ ] Investor: investment-opportunity views, market insight/analytics — net new,
       no backing data model yet; scope this once we know what "analytics" should show
 - [ ] Tenant: rental listing search, pay rent online, maintenance requests — net
