@@ -361,6 +361,43 @@ wouldn't have caught a broken JOIN or aggregate).
   exists yet; permission keys were deliberately *not* added for these in Phase 0
   to avoid dead checkboxes. Build the feature first, add the permission key with it.
 
+## Test Data — `WorkflowDemoSeeder`
+
+A single seeder (`database/seeders/WorkflowDemoSeeder.php`, run manually via
+`php artisan db:seed --class=WorkflowDemoSeeder` — not wired into
+`DatabaseSeeder`'s default list, since it's a large one-time demo dataset
+rather than a required baseline) populates realistic, cross-linked rows
+across every module so the 19 seeded logins (UserSeeder) each have real
+data to click through instead of empty lists: 14 Staff (one per org-chart
+role), 6 Clients (including the owner/buyer demo logins, linked the same
+two ways `User::resolvedClient()` actually resolves them — direct
+`mobile_app_user_id` link and citizenship-number KYC match), properties
+across every purpose (sale/rent/lease/investment) and approval state,
+site inspections, property verifications, valuation requests/reports,
+agreements (sale-purchase and listing-brokerage) with parties/witnesses,
+payment receipts (auto-posting to the Finance ledger via the existing
+observer), complaints, service orders/certificates, a property handover
+certificate, Power of Attorney records in all three states, invoices,
+budgets, payment vouchers (some left in `draft` so you can test the
+approve action yourself, others already posted for report history),
+attendance/leave/payroll/performance/documents/contracts for HR, two
+construction projects with the full set of milestones/site
+visits/BOQ/contractors/materials/inspections, and CMS content (team,
+testimonials, careers, blog, gallery, documents, contact messages).
+Guarded by a single marker check (`CLI-DEMO-BUYER` client) so it only
+seeds once — re-running it is a no-op rather than a duplicate dataset.
+**Found and fixed a real bug while building this**: `User::resolvedClient()`
+picks the *first* client matching `mobile_app_user_id`, so seeding a brand
+new client with that same link for the owner-demo login (which already had
+one from an earlier self-listed-property flow) silently created data that
+the login could never actually see. Fixed by having the seeder look up and
+reuse an existing linked client instead of creating a competing one.
+Verified: every admin resource list page and every user-portal resource
+(scoped correctly per `client_type`) renders cleanly against the seeded
+data, and the owner-demo login's agreements/payments/properties all
+resolve through the real `resolvedClient()`/`user_id` link paths rather
+than a coincidental match.
+
 ---
 
 ### How we'll work through this
