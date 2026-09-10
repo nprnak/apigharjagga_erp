@@ -95,6 +95,16 @@ class Role extends Model
             'vouchers.manage' => 'Manage Payment Vouchers',
             'vouchers.approve' => 'Approve Payment Vouchers',
             'finance_reports.view' => 'View Cash Book, Ledger, P&L & Balance Sheet',
+            'attendance.view' => 'View Attendance',
+            'attendance.manage' => 'Manage Attendance',
+            'leave.view' => 'View Leave Requests',
+            'leave.manage' => 'Manage Leave Requests',
+            'leave.approve' => 'Approve / Reject Leave Requests',
+            'payroll.view' => 'View Payroll',
+            'payroll.manage' => 'Manage Payroll (Generate Payslips)',
+            'payroll.approve' => 'Finalize Payroll & Post to Ledger',
+            'performance.view' => 'View Performance Reviews',
+            'performance.manage' => 'Manage Performance Reviews',
         ];
     }
 }

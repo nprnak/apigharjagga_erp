@@ -37,6 +37,7 @@ class RolesSeeder extends Seeder
                 'system.audit_logs',
                 'finance_accounts.view', 'budgets.view', 'invoices.view',
                 'vouchers.view', 'finance_reports.view',
+                'attendance.view', 'leave.view', 'payroll.view', 'performance.view',
             ],
             'General Manager' => [
                 'users.view', 'clients.view', 'clients.manage',
@@ -55,6 +56,10 @@ class RolesSeeder extends Seeder
                 'system.audit_logs',
                 'finance_accounts.view', 'budgets.view', 'invoices.view',
                 'vouchers.view', 'finance_reports.view',
+                'attendance.view', 'attendance.manage',
+                'leave.view', 'leave.manage', 'leave.approve',
+                'performance.view', 'performance.manage',
+                'payroll.view',
             ],
 
             // Finance & Accounts
@@ -68,6 +73,7 @@ class RolesSeeder extends Seeder
                 'invoices.view', 'invoices.manage',
                 'vouchers.view', 'vouchers.manage', 'vouchers.approve',
                 'finance_reports.view',
+                'payroll.view', 'payroll.manage', 'payroll.approve',
             ],
 
             // Marketing Department

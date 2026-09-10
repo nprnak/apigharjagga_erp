@@ -4,9 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\StaffResource\Pages;
+use App\Filament\Resources\StaffResource\RelationManagers\ContractsRelationManager;
+use App\Filament\Resources\StaffResource\RelationManagers\DocumentsRelationManager;
 use App\Models\Role;
 use App\Models\Staff;
 use Filament\Actions;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -15,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class StaffResource extends Resource
 {
@@ -38,12 +42,12 @@ class StaffResource extends Resource
         return 'heroicon-o-identification';
     }
 
-    public static function getNavigationGroup(): string|null
+    public static function getNavigationGroup(): ?string
     {
         return 'Users & KYC';
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with('role');
     }
@@ -54,6 +58,9 @@ class StaffResource extends Resource
             Section::make('Staff Details')
                 ->columns(2)
                 ->schema([
+                    TextInput::make('employee_code')
+                        ->maxLength(30)
+                        ->unique(ignoreRecord: true),
                     TextInput::make('full_name')
                         ->required()
                         ->maxLength(150),
@@ -63,6 +70,19 @@ class StaffResource extends Resource
                         ->required(),
                     TextInput::make('designation')
                         ->maxLength(100),
+                    TextInput::make('department')
+                        ->maxLength(100),
+                    Select::make('employment_type')
+                        ->options([
+                            'full_time' => 'Full Time', 'part_time' => 'Part Time',
+                            'contract' => 'Contract', 'probation' => 'Probation',
+                        ])
+                        ->default('full_time')
+                        ->native(false),
+                    DatePicker::make('date_of_joining'),
+                    TextInput::make('basic_salary')
+                        ->numeric()
+                        ->prefix('Rs.'),
                     TextInput::make('mobile_no')
                         ->tel()
                         ->maxLength(20),
@@ -72,6 +92,23 @@ class StaffResource extends Resource
                     Toggle::make('is_active')
                         ->label('Active')
                         ->default(true),
+                ]),
+            Section::make('Personal & Emergency Contact')
+                ->columns(2)
+                ->collapsible()
+                ->schema([
+                    DatePicker::make('date_of_birth'),
+                    Select::make('gender')
+                        ->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])
+                        ->native(false),
+                    TextInput::make('address')
+                        ->maxLength(255)
+                        ->columnSpanFull(),
+                    TextInput::make('emergency_contact_name')
+                        ->maxLength(150),
+                    TextInput::make('emergency_contact_phone')
+                        ->tel()
+                        ->maxLength(20),
                 ]),
         ]);
     }
@@ -108,6 +145,14 @@ class StaffResource extends Resource
                 Actions\DeleteAction::make(),
             ])
             ->defaultSort('full_name');
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            DocumentsRelationManager::class,
+            ContractsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

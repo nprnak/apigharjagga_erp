@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,              // provinces → districts → municipalities → wards (no dependencies)
             RolesSeeder::class,                 // roles (no dependencies)
             FinanceAccountsSeeder::class,        // chart of accounts (no dependencies)
+            LeaveTypesSeeder::class,             // leave_types (no dependencies)
             DocumentTypesSeeder::class,          // document_types (no dependencies)
             PropertyFeatureTypesSeeder::class,   // property_feature_types (no dependencies)
             ServiceTypesSeeder::class,           // service_types (no dependencies)

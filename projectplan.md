@@ -135,8 +135,36 @@ built and shipped on its own.
       **Deferred**: Payroll (the proposal lists it under both Finance and HR;
       it's fundamentally an employee-comp feature, so it'll land with the HR
       module instead of being split across both).
-- [ ] **HR module**: Employee management (beyond the current bare `Staff` directory),
-      Attendance, Leave, Payroll, Performance Review, Employee Documents, Contracts
+- [x] **HR module** — DONE. Extended `Staff` (the existing internal employee
+      directory) with a real HR profile (employee code, department,
+      employment type, date of joining, basic salary, DOB/gender, address,
+      emergency contact) instead of creating a parallel "Employee" model.
+      Added `AttendanceResource` (daily status per staff, plus a "Mark
+      Today's Attendance" bulk action that presence-marks every active
+      staff member not yet recorded), `LeaveRequestResource` (apply/approve/
+      reject, mirroring the Complaint assign/resolve pattern), and
+      `PerformanceReviewResource` (1-5 rating, strengths/areas for
+      improvement). `StaffResource` gained Documents and Contracts relation
+      manager tabs (per-employee file uploads and contract records),
+      matching the pattern already used for Agreement parties/witnesses.
+      **Payroll** (`PayrollRunResource`) is where HR connects back to the
+      Finance ledger built in the previous step: "Generate Payslips" pulls
+      each active staff member's `basic_salary` into a payslip for the
+      period (adjustable per-employee via a Payslips relation manager for
+      allowances/deductions), and "Finalize & Post" posts one Salaries &
+      Wages expense transaction for the period's total net pay — reusing
+      `FinanceTransaction::postBalanced()` rather than inventing a second
+      posting mechanism. No dedicated "HR" role exists in the org chart, so
+      permissions went to the roles that already have staff-supervision or
+      financial authority: Finance Manager owns Payroll end-to-end,
+      General Manager manages Attendance/Leave/Performance day-to-day
+      (matches its "staff supervision" org-chart duty) and approves leave,
+      Managing Director and Admin get view-only oversight across all of it.
+      Verified: RBAC gating confirmed correct for every role, attendance
+      bulk-marking, and the full generate→finalize→ledger-post payroll flow
+      (correctly skipping staff with no salary set) all checked against
+      real data in a rolled-back transaction — cash decreased by exactly
+      the posted payroll total.
 - [ ] **Engineering / Construction project management**: Project registration,
       Engineer assignment, Site visits, Milestones, BOQ, Contractor management,
       Material tracking, Inspection reports (distinct from Annex-D site inspections,
