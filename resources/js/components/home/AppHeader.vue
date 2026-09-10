@@ -5,12 +5,24 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 const nav = [
     { label: 'Buy', href: '/properties' },
     { label: 'Sell', href: '/login' },
+    { label: 'About', href: '/about' },
+    { label: 'Careers', href: '/careers' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Contact', href: '/contact' },
 ];
 
-const scrolled = ref(false);
+// `solid` is for interior pages with no hero image behind the header —
+// white nav text over a transparent background would be unreadable there,
+// so those pages force the "scrolled" (white background, dark text) look
+// from the start instead of waiting for an actual scroll event.
+const props = withDefaults(defineProps<{ solid?: boolean }>(), {
+    solid: false,
+});
+
+const scrolledByPosition = ref(false);
 
 function onScroll() {
-    scrolled.value = window.scrollY > 40;
+    scrolledByPosition.value = window.scrollY > 40;
 }
 
 onMounted(() => {
@@ -22,24 +34,46 @@ onUnmounted(() => {
     window.removeEventListener('scroll', onScroll);
 });
 
+const scrolled = computed(() => props.solid || scrolledByPosition.value);
+
 const headerClass = computed(() =>
     scrolled.value
         ? 'bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm'
         : 'bg-transparent border-b border-transparent',
 );
 
-const textClass = computed(() => (scrolled.value ? 'text-slate-800' : 'text-white'));
+const textClass = computed(() =>
+    scrolled.value ? 'text-slate-800' : 'text-white',
+);
 </script>
 
 <template>
-    <header :class="['fixed top-0 left-0 z-50 w-full transition-colors duration-300', headerClass]">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+    <header
+        :class="[
+            'fixed top-0 left-0 z-50 w-full transition-colors duration-300',
+            headerClass,
+        ]"
+    >
+        <div
+            class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"
+        >
             <div class="flex items-center gap-6 sm:gap-8">
                 <Link href="/" class="flex items-center gap-2.5">
-                    <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
-                        <img src="/images/logo.png" alt="Api Ghar Jagga" class="h-full w-full object-contain" />
+                    <span
+                        class="flex h-11 w-11 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5"
+                    >
+                        <img
+                            src="/images/logo.png"
+                            alt="Api Ghar Jagga"
+                            class="h-full w-full object-contain"
+                        />
                     </span>
-                    <span :class="['text-base font-bold tracking-wide transition-colors', textClass]">
+                    <span
+                        :class="[
+                            'text-base font-bold tracking-wide transition-colors',
+                            textClass,
+                        ]"
+                    >
                         Api Ghar Jagga
                     </span>
                 </Link>
@@ -49,7 +83,10 @@ const textClass = computed(() => (scrolled.value ? 'text-slate-800' : 'text-whit
                         v-for="item in nav"
                         :key="item.label"
                         :href="item.href"
-                        :class="['text-sm font-semibold transition-colors hover:opacity-80', textClass]"
+                        :class="[
+                            'text-sm font-semibold transition-colors hover:opacity-80',
+                            textClass,
+                        ]"
                     >
                         {{ item.label }}
                     </a>
@@ -59,7 +96,10 @@ const textClass = computed(() => (scrolled.value ? 'text-slate-800' : 'text-whit
             <div class="flex items-center gap-4">
                 <a
                     href="/signin"
-                    :class="['text-sm font-semibold transition-colors hover:opacity-80', textClass]"
+                    :class="[
+                        'text-sm font-semibold transition-colors hover:opacity-80',
+                        textClass,
+                    ]"
                 >
                     Sign In
                 </a>

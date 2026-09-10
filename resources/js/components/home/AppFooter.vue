@@ -1,11 +1,10 @@
 <script setup lang="ts">
 const companyLinks = [
-    { label: 'About', href: '#' },
-    { label: 'Contact', href: '/signin' },
-    { label: 'Press', href: '#' },
-    { label: 'Leadership', href: '#' },
-    { label: 'Diversity', href: '#' },
-    { label: 'Giving Back', href: '#' },
+    { label: 'About Us', href: '/about' },
+    { label: 'Our Team', href: '/about' },
+    { label: 'News & Blog', href: '/blog' },
+    { label: 'Gallery', href: '/gallery' },
+    { label: 'Contact', href: '/contact' },
 ];
 
 const resourceLinks = [
@@ -13,10 +12,11 @@ const resourceLinks = [
     { label: 'Home valuation', href: '#home-valuation' },
     { label: 'Sell a property', href: '/login' },
     { label: 'All listings', href: '/properties' },
+    { label: 'Document Downloads', href: '/documents' },
 ];
 
 const joinLinks = [
-    { label: 'Careers', href: '#' },
+    { label: 'Careers', href: '/careers' },
     { label: 'Sign up', href: '/signup' },
     { label: 'Culture', href: '#' },
     { label: 'Partner with us', href: '#' },
@@ -66,15 +66,29 @@ const socials = [
                     <!-- Branding -->
                     <div class="lg:col-span-4">
                         <div class="flex items-center gap-4">
-                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white p-1">
-                                <img src="/images/logo.png" alt="Api Ghar Jagga" class="h-full w-full object-contain" />
+                            <span
+                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white p-1"
+                            >
+                                <img
+                                    src="/images/logo.png"
+                                    alt="Api Ghar Jagga"
+                                    class="h-full w-full object-contain"
+                                />
                             </span>
-                            <div class="h-10 w-px bg-white/30" aria-hidden="true" />
-                            <div class="text-lg font-bold tracking-tight">Api Ghar Jagga</div>
+                            <div
+                                class="h-10 w-px bg-white/30"
+                                aria-hidden="true"
+                            />
+                            <div class="text-lg font-bold tracking-tight">
+                                Api Ghar Jagga
+                            </div>
                         </div>
 
-                        <p class="mt-5 max-w-sm text-[11px] leading-relaxed tracking-[0.12em] text-white/80 uppercase">
-                            Nepal's trusted marketplace for verified homes, land, and commercial property.
+                        <p
+                            class="mt-5 max-w-sm text-[11px] leading-relaxed tracking-[0.12em] text-white/80 uppercase"
+                        >
+                            Nepal's trusted marketplace for verified homes,
+                            land, and commercial property.
                         </p>
 
                         <div class="mt-6 flex items-center gap-4">
@@ -85,7 +99,12 @@ const socials = [
                                 :aria-label="social.label"
                                 class="text-white/90 transition hover:text-white"
                             >
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <svg
+                                    class="h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
                                     <path :d="social.path" />
                                 </svg>
                             </a>
@@ -93,11 +112,20 @@ const socials = [
                     </div>
 
                     <!-- Link columns -->
-                    <div class="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-8">
+                    <div
+                        class="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-8"
+                    >
                         <div>
-                            <h4 class="text-xs font-bold tracking-[0.14em] uppercase">Company</h4>
+                            <h4
+                                class="text-xs font-bold tracking-[0.14em] uppercase"
+                            >
+                                Company
+                            </h4>
                             <ul class="mt-4 space-y-2">
-                                <li v-for="link in companyLinks" :key="link.label">
+                                <li
+                                    v-for="link in companyLinks"
+                                    :key="link.label"
+                                >
                                     <a
                                         :href="link.href"
                                         class="text-sm text-white/75 transition hover:text-white hover:underline"
@@ -109,9 +137,16 @@ const socials = [
                         </div>
 
                         <div>
-                            <h4 class="text-xs font-bold tracking-[0.14em] uppercase">Resources</h4>
+                            <h4
+                                class="text-xs font-bold tracking-[0.14em] uppercase"
+                            >
+                                Resources
+                            </h4>
                             <ul class="mt-4 space-y-2">
-                                <li v-for="link in resourceLinks" :key="link.label">
+                                <li
+                                    v-for="link in resourceLinks"
+                                    :key="link.label"
+                                >
                                     <a
                                         :href="link.href"
                                         class="text-sm text-white/75 transition hover:text-white hover:underline"
@@ -123,7 +158,11 @@ const socials = [
                         </div>
 
                         <div>
-                            <h4 class="text-xs font-bold tracking-[0.14em] uppercase">Join Api Ghar Jagga</h4>
+                            <h4
+                                class="text-xs font-bold tracking-[0.14em] uppercase"
+                            >
+                                Join Api Ghar Jagga
+                            </h4>
                             <ul class="mt-4 space-y-2">
                                 <li v-for="link in joinLinks" :key="link.label">
                                     <a
@@ -138,7 +177,10 @@ const socials = [
 
                         <div>
                             <ul class="mt-6 space-y-2 sm:mt-0 lg:mt-[1.85rem]">
-                                <li v-for="link in serviceLinks" :key="link.label">
+                                <li
+                                    v-for="link in serviceLinks"
+                                    :key="link.label"
+                                >
                                     <a
                                         :href="link.href"
                                         class="text-sm text-white/75 transition hover:text-white hover:underline"
@@ -156,10 +198,24 @@ const socials = [
         <!-- Bottom legal footer -->
         <div class="bg-[#0f1f35]">
             <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-                <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/70">
-                    <a href="#" class="transition hover:text-white hover:underline">Terms of use</a>
-                    <a href="#" class="transition hover:text-white hover:underline">Privacy notice</a>
-                    <a href="#" class="transition hover:text-white hover:underline">Privacy center</a>
+                <div
+                    class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/70"
+                >
+                    <a
+                        href="#"
+                        class="transition hover:text-white hover:underline"
+                        >Terms of use</a
+                    >
+                    <a
+                        href="#"
+                        class="transition hover:text-white hover:underline"
+                        >Privacy notice</a
+                    >
+                    <a
+                        href="#"
+                        class="transition hover:text-white hover:underline"
+                        >Privacy center</a
+                    >
                 </div>
 
                 <div class="my-5 border-t border-white/15" />
@@ -176,15 +232,18 @@ const socials = [
                 </div>
 
                 <p class="mt-6 text-[11px] leading-relaxed text-white/50">
-                    Api Ghar Jagga provides a platform for verified property listings across Nepal. Information
-                    displayed on this site is supplied by property owners and agents and has not been verified
-                    independently unless marked as verified. All property details, prices, and availability are
-                    subject to change without notice.
+                    Api Ghar Jagga provides a platform for verified property
+                    listings across Nepal. Information displayed on this site is
+                    supplied by property owners and agents and has not been
+                    verified independently unless marked as verified. All
+                    property details, prices, and availability are subject to
+                    change without notice.
                 </p>
 
                 <p class="mt-4 text-[11px] text-white/45">
-                    &copy; {{ new Date().getFullYear() }} Api Ghar Jagga. All rights reserved. Api Ghar Jagga
-                    and related marks are trademarks of Api Ghar Jagga.
+                    &copy; {{ new Date().getFullYear() }} Api Ghar Jagga. All
+                    rights reserved. Api Ghar Jagga and related marks are
+                    trademarks of Api Ghar Jagga.
                 </p>
             </div>
         </div>

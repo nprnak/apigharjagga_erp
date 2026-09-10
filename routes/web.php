@@ -1,15 +1,22 @@
 <?php
 
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\AdminApprovalController;
 use App\Http\Controllers\AgreementController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CareersController;
 use App\Http\Controllers\ClientRegistrationController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DocumentsController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyInquiryController;
 use App\Http\Controllers\PropertyListingController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ValuationRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +30,18 @@ Route::get('/properties/{listing}', [MarketplaceController::class, 'show'])->nam
 Route::get('/locations/suggest', [MarketplaceController::class, 'suggestLocations'])->name('locations.suggest');
 
 Route::post('/inquiries', [PropertyInquiryController::class, 'store'])->name('inquiries.store');
+
+// Corporate website
+Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::get('/careers', [CareersController::class, 'index'])->name('careers');
+Route::post('/careers/{job}/apply', [CareersController::class, 'apply'])->name('careers.apply');
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery');
+Route::get('/documents', [DocumentsController::class, 'index'])->name('documents');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/property-listing', [PropertyListingController::class, 'index'])->name('property.listing');
 Route::post('/property-listing', [PropertyListingController::class, 'store'])->name('property.listing.store');

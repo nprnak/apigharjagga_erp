@@ -194,21 +194,67 @@ money-tracking systems.
       voucher posting through the ledger) against real data in a
       rolled-back transaction — cash decreased by exactly the voucher amount.
 
-## Phase 4 — Corporate Website + CMS
+## Phase 4 — Corporate Website + CMS — **DONE**
 
-The marketing site (Home, About, Services, Projects Portfolio, Team, Testimonials,
-Career, News/Blog, Gallery, Contact) needs CMS-backed content instead of hard-coded
-Vue pages, so non-technical staff can update it.
+The marketing site (About, Team, Testimonials, Careers, News/Blog, Gallery,
+Contact, Document Downloads) is now CMS-backed instead of needing a developer
+for every content change.
 
-- [ ] Content models + Filament resources: Team members, Testimonials, Job
-      openings/Career postings, Blog/News posts, Gallery albums
-- [ ] Public Vue/Inertia pages consuming that content
-- [ ] Contact/Online Inquiry form (confirm existing `PropertyInquiryController`
-      covers this or needs a general-purpose contact form)
-- [ ] Download Documents section (public document library)
-- [ ] Google Maps integration on Contact/property pages
-- [ ] SEO pass (meta tags, sitemap, structured data)
-- [ ] Social media integration (share buttons / feed embeds)
+- [x] Content models + Filament resources: `TeamMemberResource`,
+      `TestimonialResource`, `JobOpeningResource` (+ an Applicants relation
+      manager with a "Resume" quick-open action), `BlogPostResource` (rich
+      text editor, slug auto-generated from title, publish toggle),
+      `GalleryAlbumResource` (+ an Images relation manager),
+      `SiteDocumentResource`, and `ContactMessageResource` (mirrors the
+      existing Inquiry mark-contacted/close pattern). Every uploaded-file
+      model got a `/storage/...` URL accessor matching the convention
+      already established by `PropertyPhoto`, so the frontend never
+      constructs storage paths itself.
+- [x] Public Vue/Inertia pages: `About.vue` (team + testimonials),
+      `Careers.vue` (listing + an apply modal with resume upload),
+      `Blog/Index.vue` + `Blog/Show.vue` (with related posts + social share
+      links), `Gallery.vue` (album grid + lightbox), `Documents.vue`
+      (download list). `AppHeader` gained a `solid` prop so pages without a
+      hero image don't inherit the landing page's transparent-until-scroll
+      header (which would otherwise render white nav text on a white page).
+      `AppHeader`/`AppFooter` nav updated to link to all of these instead of
+      the placeholder `#` hrefs they had before.
+- [x] Contact form: built as a genuinely separate `ContactMessage` model/
+      flow rather than overloading `PropertyInquiry`, which always requires
+      a specific `property_id` and serves marketplace buyer/tenant leads —
+      a general "have a question" message isn't that.
+- [x] Download Documents section — `SiteDocumentResource` (admin) +
+      `Documents.vue` (public list, `is_public` scoped).
+- [x] Google Maps — embedded on the Contact page via a live search-query
+      iframe (`google.com/maps?q=...`) rather than a fabricated fixed
+      coordinate, since the exact office address wasn't available; the page
+      carries a visible note to update it once you have the real address.
+- [x] SEO pass — per-page `<Head>` title + meta description on every new
+      page (matching the pattern already used elsewhere in the app), plus a
+      new `/sitemap.xml` route (`SitemapController`) covering every static
+      page, published blog posts, and live property listings.
+- [x] Social media integration — share links (Facebook/X/LinkedIn/WhatsApp)
+      on blog posts, computed from the actual page URL at view time.
+      Footer's social icons remain `#` placeholders — no real social media
+      URLs exist yet to link them to; wire them up once you have them.
+      No feed-embed widget was built (not requested beyond "integration").
+- [x] New permissions (`content`, `careers`, `site_documents`,
+      `contact_messages`) — Marketing Manager owns content/careers/documents
+      end to end (matches its org-chart "manage social media integrations,
+      approve digital content" duty), Customer Support Officer handles
+      Contact Messages (matches its existing inquiry-handling role), GM gets
+      view-only oversight, everyone else sees nothing.
+
+Verified: RBAC gating for every role across all 7 resources; every admin
+page and all 7 new public routes (`/about`, `/careers`, `/blog`,
+`/gallery`, `/documents`, `/contact`, `/sitemap.xml`) return 200 and render
+through the real Inertia+Vue stack via a live dev server — not just a
+component-level check; the homepage was re-verified working after changing
+the shared header/footer; TypeScript, ESLint, and Prettier all pass clean
+on every new/modified frontend file; and the full data flow (team/
+testimonial active-only filtering, job application linking, blog publish
+visibility, gallery image URLs, contact message creation) confirmed
+correct against real data in a rolled-back transaction.
 
 ## Phase 5 — Reporting & Analytics
 

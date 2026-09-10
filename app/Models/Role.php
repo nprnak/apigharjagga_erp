@@ -110,6 +110,14 @@ class Role extends Model
             'projects.log' => 'Log Site Visits, Progress, Materials & Inspections',
             'contractors.view' => 'View Contractors',
             'contractors.manage' => 'Manage Contractors',
+            'content.view' => 'View Website Content (Team, Testimonials, Blog, Gallery)',
+            'content.manage' => 'Manage Website Content (Team, Testimonials, Blog, Gallery)',
+            'careers.view' => 'View Job Openings & Applications',
+            'careers.manage' => 'Manage Job Openings & Applications',
+            'site_documents.view' => 'View Public Document Downloads',
+            'site_documents.manage' => 'Manage Public Document Downloads',
+            'contact_messages.view' => 'View Contact Messages',
+            'contact_messages.manage' => 'Manage Contact Messages',
         ];
     }
 }

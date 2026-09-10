@@ -62,6 +62,7 @@ class RolesSeeder extends Seeder
                 'performance.view', 'performance.manage',
                 'payroll.view',
                 'projects.view', 'projects.manage', 'contractors.view', 'contractors.manage',
+                'content.view', 'careers.view', 'site_documents.view', 'contact_messages.view',
             ],
 
             // Finance & Accounts
@@ -82,6 +83,10 @@ class RolesSeeder extends Seeder
             'Marketing Manager' => [
                 'properties.view', 'properties.manage',
                 'inquiries.view',
+                'content.view', 'content.manage',
+                'careers.view', 'careers.manage',
+                'site_documents.view', 'site_documents.manage',
+                'contact_messages.view', 'contact_messages.manage',
             ],
 
             // Technical Department
@@ -133,6 +138,7 @@ class RolesSeeder extends Seeder
                 'complaints.view', 'complaints.assign', 'complaints.resolve',
                 'handovers.view', 'service_orders.view',
                 'completions.view', 'completions.manage',
+                'contact_messages.view', 'contact_messages.manage',
             ],
             'Receptionist / Front Desk Officer' => [
                 'clients.view', 'clients.manage',
