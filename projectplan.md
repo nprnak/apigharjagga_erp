@@ -351,6 +351,95 @@ exactly the expected numbers, not just their empty-state branch (most
 tables are still near-empty in dev, so the plain render check alone
 wouldn't have caught a broken JOIN or aggregate).
 
+## Phase 6 — Annex-F KYC Overhaul — **DONE**
+
+Turned the single-stage, narrow KYC form into a full bilingual Annex-F
+identity gate with a real two-person review workflow, a document
+checklist, and a printable certificate — and made it the one thing every
+new portal login must clear before anything else in the User panel
+becomes visible.
+
+- [x] **Two write paths consolidated into one.** A legacy inline KYC form
+      lived on the Inertia `Dashboard.vue` "kyc" tab (posting to
+      `KycController::store()`), completely independent of the newer,
+      more complete Filament Wizard (`KycVerificationPage`) — both wrote to
+      the same `kyc_verifications` row with different, drifting field
+      coverage. Removed the duplicate form and its dead `store()`
+      method/route/`KycStoreRequest` (confirmed unused elsewhere first);
+      the dashboard's KYC tab is now a status summary + a link to the one
+      real form. `DashboardController` no longer ships the now-unused
+      per-field KYC payload over the wire.
+- [x] **Full Annex-F field parity.** Added the fields the Client
+      Registration migration already has but `kyc_verifications` didn't:
+      `grandfather_name`, `alt_contact_no`, `telephone_no`, and an
+      applicant `signature_path`/`signature_date` — via
+      `2026_09_16_090000_add_annex_f_fields_and_review_stages_to_kyc_verifications_table.php`.
+- [x] **Two-stage review workflow**, per your direction to give the
+      approval stage its own dedicated role rather than reusing General
+      Manager: `status` is now `pending → verified → approved` (or
+      `rejected` from either stage), with `verified_by_staff_id`/
+      `verified_at` and `approved_by_staff_id`/`approved_at` columns.
+      New granular permissions `kyc.verify` / `kyc.approve` (alongside the
+      existing `kyc.view`); **Document Officer / Legal Coordinator**
+      verifies (matches its existing PoA-verification duty), a brand new
+      **KYC Approver** role gives final sign-off, General Manager and
+      Customer Support Officer keep `kyc.view` only (oversight, no
+      action). `KycVerificationResource` gained dedicated Verify/Approve/
+      Reject table actions (staff picked via a dropdown in the action's
+      own modal, matching the `LeaveRequestResource`-style pattern already
+      used elsewhere since Staff and User logins aren't linked), each
+      visible only to the permission and status stage it applies to.
+- [x] **Document checklist with uploads.** New `kyc_verification_documents`
+      table (mirrors the existing `client_documents`/`property_documents`
+      checklist pattern against the shared `document_types` lookup).
+      Three required documents — Citizenship Copy, Passport-Size Photo,
+      Proof of Current Address (a new document type; the first two reuse
+      the Wizard's existing ID/photo uploads rather than asking for the
+      same file twice) — are synced into this table on every submission,
+      so the admin resource and PDF can list checklist status generically
+      instead of reading fixed columns.
+      **Deferred**: only these three documents are enforced today; adding
+      a fourth later means adding one more `KycVerification::requiredDocumentTypeNames()`
+      entry and one more upload field, not a schema change.
+- [x] **Bilingual (English + Nepali) labels** on every field in the
+      Wizard and the admin form, matching the "English (नेपाली)" inline
+      convention already used elsewhere in this app (`LocationSelects`'
+      Province/District/Municipality/Ward dropdowns already did this by
+      default — the Wizard's custom label overrides had been silently
+      dropping that translation; fixed by no longer overriding them).
+      The status page also gained a visible 3-step progress tracker
+      (Submitted → Verified → Approved) instead of a flat status badge.
+- [x] **Printable PDF certificate**, rebuilt on the existing Annex-style
+      Dompdf convention (bilingual `.np`/Kalimati letterhead, bordered
+      data tables) already used for the Agreement and Client Registration
+      PDFs: added the new personal fields, a document-checklist table,
+      and a three-way signature block (Applicant / Verified By / Approved
+      By) with real staff names, designations, and dates instead of a
+      single generic "Verified By (Admin)" line. Added a self-service
+      route (`/kyc/pdf`, scoped to the logged-in user's own record — never
+      accepts an arbitrary id) so an approved applicant can download their
+      own certificate; the admin resource gained a PDF action too.
+- [x] **Portal-wide KYC gate.** Added `User::hasApprovedKyc()` and applied
+      it to `canViewAny()`/`canCreate()` on every self-service User-panel
+      resource — MyProperty, MyValuationRequest, MyAgreement, MyPayment,
+      MyPowerOfAttorney, MyInvestment, MyRental — so a login with no
+      approved KYC sees only the KYC page; Filament's own authorization
+      returns a 403 for anything else, matching "all other fields
+      disabled until KYC is complete."
+
+Verified: a full submit → verify → approve cycle exercised end-to-end
+against a throwaway user in a rolled-back transaction — gating correctly
+blocks before submission and during the `verified` stage, unlocks only
+after approval; the Document Officer / KYC Approver permission split
+confirmed via `hasPermission()` for every relevant role (including that
+Document Officer cannot approve and KYC Approver cannot verify); every
+admin and User-panel page renders cleanly; the PDF generates successfully
+with all new fields, the checklist table, and the three-way signature
+block populated from real data. `WorkflowDemoSeeder` updated to match —
+Investor's demo KYC is deliberately left `pending` so the verify/approve
+flow has a live example to click through; Tenant and Agent are
+pre-approved so their own portal features stay testable.
+
 ## Deferred / Out of Scope for Now
 
 - **Native mobile apps** (Customer/Buyer/Investor/Tenant) — treated as

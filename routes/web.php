@@ -52,9 +52,10 @@ Route::get('/signin', fn () => redirect()->route('login'))->name('signin');
 Route::get('/signup', fn () => redirect()->route('register'))->name('signup');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('/kyc', [KycController::class, 'store'])->name('kyc.store');
     Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
 });
+
+Route::middleware('auth')->get('/kyc/pdf', [KycController::class, 'downloadMyPdf'])->name('kyc.my.pdf');
 
 // Named route used by Breeze auth redirects and KYC/property controllers.
 // Maps legacy ?tab= query params to the Filament user panel pages.

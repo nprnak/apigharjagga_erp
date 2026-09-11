@@ -45,7 +45,7 @@ class RolesSeeder extends Seeder
                 'users.view', 'clients.view', 'clients.manage',
                 'properties.view', 'properties.manage', 'properties.approve',
                 'inquiries.view', 'inquiries.manage',
-                'kyc.view', 'kyc.manage',
+                'kyc.view',
                 'staff.view', 'staff.manage',
                 'complaints.view', 'complaints.assign',
                 'valuations.view', 'valuations.assign', 'valuations.review',
@@ -134,7 +134,7 @@ class RolesSeeder extends Seeder
             // Customer Service
             'Customer Support Officer' => [
                 'clients.view', 'clients.manage',
-                'kyc.view', 'kyc.manage',
+                'kyc.view',
                 'properties.view',
                 'inquiries.view', 'inquiries.manage',
                 'complaints.view', 'complaints.assign', 'complaints.resolve',
@@ -151,10 +151,13 @@ class RolesSeeder extends Seeder
             // Legal/Documentation
             'Document Officer / Legal Coordinator' => [
                 'clients.view',
-                'kyc.view', 'kyc.manage',
+                'kyc.view', 'kyc.verify',
                 'verifications.view', 'verifications.manage',
                 'agreements.view', 'agreements.manage',
                 'poa.view', 'poa.manage',
+            ],
+            'KYC Approver' => [
+                'kyc.view', 'kyc.approve',
             ],
 
             // IT & Admin

@@ -41,7 +41,9 @@ class MyInvestmentResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::user()?->client_type === 'investor';
+        $user = Auth::user();
+
+        return $user?->client_type === 'investor' && $user->hasApprovedKyc();
     }
 
     public static function canCreate(): bool

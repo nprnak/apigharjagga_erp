@@ -42,7 +42,9 @@ class MyRentalResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::user()?->client_type === 'tenant';
+        $user = Auth::user();
+
+        return $user?->client_type === 'tenant' && $user->hasApprovedKyc();
     }
 
     public static function canCreate(): bool

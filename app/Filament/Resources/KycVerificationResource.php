@@ -6,6 +6,7 @@ use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\KycVerificationResource\Pages;
 use App\Filament\Support\LocationSelects;
 use App\Models\KycVerification;
+use App\Models\Staff;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -21,6 +22,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 
 class KycVerificationResource extends Resource
 {
@@ -42,7 +45,7 @@ class KycVerificationResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): string|null
+    public static function getNavigationGroup(): ?string
     {
         return 'Users & KYC';
     }
@@ -51,12 +54,19 @@ class KycVerificationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('status', 'pending')->count() ?: null;
+        return (string) static::getModel()::whereIn('status', ['pending', 'verified'])->count() ?: null;
     }
 
     public static function getNavigationBadgeColor(): string|array|null
     {
         return 'warning';
+    }
+
+    protected static function userCan(string $permission): bool
+    {
+        $user = Auth::guard('admin')->user();
+
+        return (bool) $user?->hasPermission($permission);
     }
 
     public static function form(Schema $schema): Schema
@@ -68,19 +78,27 @@ class KycVerificationResource extends Resource
             ->columns(['default' => 1, 'lg' => 3])
             ->components([
                 // The decision band sits full-width above the fold — it is why
-                // an admin opens the record.
-                Section::make('Review Decision')
-                    ->description('Set the verification outcome. The note is shown to the user when rejected.')
+                // an admin opens the record. Kept simple (status + note) since
+                // the actual stage transitions happen through the dedicated
+                // Verify / Approve / Reject table actions below, each gated on
+                // its own permission.
+                Section::make('Review Status')
+                    ->description('Stage changes are made via the Verify / Approve / Reject actions on the list page, not by editing this field directly.')
                     ->icon('heroicon-o-shield-check')
                     ->columns(3)
                     ->columnSpanFull()
                     ->schema([
                         Select::make('status')
-                            ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
+                            ->options([
+                                'pending' => 'Pending',
+                                'verified' => 'Verified',
+                                'approved' => 'Approved',
+                                'rejected' => 'Rejected',
+                            ])
                             ->required()
                             ->native(false),
                         Textarea::make('admin_note')
-                            ->label('Admin Note (shown to user if rejected)')
+                            ->label('Review Note (shown to user if rejected)')
                             ->rows(2)
                             ->columnSpan(2),
                     ]),
@@ -95,6 +113,7 @@ class KycVerificationResource extends Resource
                             ->schema([
                                 TextInput::make('full_name')->label('Full Name')->maxLength(150),
                                 TextInput::make('father_mother_name')->label('Father / Mother Name')->maxLength(150),
+                                TextInput::make('grandfather_name')->label('Grandfather Name')->maxLength(150),
                                 TextInput::make('spouse_name')->label('Spouse Name')->maxLength(150),
                                 TextInput::make('citizenship_no')->label('Citizenship No.')->maxLength(50),
                                 DatePicker::make('date_of_birth')->label('Date of Birth'),
@@ -102,6 +121,8 @@ class KycVerificationResource extends Resource
                                 TextInput::make('nationality')->default('Nepali')->maxLength(50),
                                 TextInput::make('occupation')->maxLength(100),
                                 TextInput::make('mobile_no')->label('Mobile No.')->tel()->maxLength(20),
+                                TextInput::make('alt_contact_no')->label('Alternate Contact')->tel()->maxLength(20),
+                                TextInput::make('telephone_no')->label('Telephone No.')->tel()->maxLength(20),
                                 TextInput::make('email')->email()->maxLength(150),
                             ]),
 
@@ -116,12 +137,6 @@ class KycVerificationResource extends Resource
                                     municipality: 'permanent_municipality',
                                     ward: 'permanent_ward_no',
                                     required: false,
-                                    labels: [
-                                        'province' => 'Province',
-                                        'district' => 'District',
-                                        'municipality' => 'Municipality / VDC',
-                                        'ward' => 'Ward No.',
-                                    ],
                                 ),
                                 TextInput::make('permanent_tole')->label('Tole / Locality')->columnSpanFull(),
                             ]),
@@ -137,12 +152,6 @@ class KycVerificationResource extends Resource
                                     municipality: 'current_municipality',
                                     ward: 'current_ward_no',
                                     required: false,
-                                    labels: [
-                                        'province' => 'Province',
-                                        'district' => 'District',
-                                        'municipality' => 'Municipality / VDC',
-                                        'ward' => 'Ward No.',
-                                    ],
                                 ),
                                 TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
                             ]),
@@ -158,9 +167,9 @@ class KycVerificationResource extends Resource
                                 Select::make('id_type')
                                     ->label('ID Type')
                                     ->options([
-                                        'citizenship'     => 'Citizenship Card',
-                                        'national_id'     => 'National ID',
-                                        'passport'        => 'Passport',
+                                        'citizenship' => 'Citizenship Card',
+                                        'national_id' => 'National ID',
+                                        'passport' => 'Passport',
                                         'driving_license' => 'Driving License',
                                     ])
                                     ->native(false),
@@ -180,9 +189,34 @@ class KycVerificationResource extends Resource
                                     ->disk('public')
                                     ->openable()
                                     ->downloadable(),
+                                FileUpload::make('signature_path')
+                                    ->label('Applicant Signature')
+                                    ->image()
+                                    ->maxSize(4096)
+                                    ->disk('public')
+                                    ->openable()
+                                    ->downloadable(),
                             ]),
 
-                        Section::make('Submission')
+                        Section::make('Document Checklist')
+                            ->icon('heroicon-o-clipboard-document-check')
+                            ->schema([
+                                Placeholder::make('documents_checklist')
+                                    ->label('')
+                                    ->content(function (?KycVerification $record) {
+                                        if (! $record) {
+                                            return '—';
+                                        }
+
+                                        $lines = $record->documents()->with('docType')->get()
+                                            ->map(fn ($d) => ($d->status === 'submitted' ? '✅ ' : '⬜ ').($d->docType?->doc_name ?? 'Document'))
+                                            ->implode("\n");
+
+                                        return new HtmlString(nl2br(e($lines ?: 'No checklist items yet.')));
+                                    }),
+                            ]),
+
+                        Section::make('Review Trail')
                             ->icon('heroicon-o-clock')
                             ->schema([
                                 Placeholder::make('user_account')
@@ -191,7 +225,16 @@ class KycVerificationResource extends Resource
                                         ? collect([$record->user->name, $record->user->email])->filter()->implode(' · ') ?: '—'
                                         : '—'),
                                 DateTimePicker::make('submitted_at')->label('Submitted At')->disabled(),
-                                DateTimePicker::make('reviewed_at')->label('Reviewed At')->disabled(),
+                                Placeholder::make('verified_by')
+                                    ->label('Verified By')
+                                    ->content(fn (?KycVerification $record) => $record?->verifiedBy
+                                        ? $record->verifiedBy->full_name.' — '.optional($record->verified_at)->format('d M Y, H:i')
+                                        : '—'),
+                                Placeholder::make('approved_by')
+                                    ->label('Approved By')
+                                    ->content(fn (?KycVerification $record) => $record?->approvedBy
+                                        ? $record->approvedBy->full_name.' — '.optional($record->approved_at)->format('d M Y, H:i')
+                                        : '—'),
                             ]),
                     ]),
             ]);
@@ -220,58 +263,105 @@ class KycVerificationResource extends Resource
                     ->label('ID Type')
                     ->badge()
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'citizenship'     => 'Citizenship',
-                        'national_id'     => 'National ID',
-                        'passport'        => 'Passport',
+                        'citizenship' => 'Citizenship',
+                        'national_id' => 'National ID',
+                        'passport' => 'Passport',
                         'driving_license' => 'Driving License',
-                        default           => $state,
+                        default => $state,
                     }),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'approved' => 'success',
-                        'pending'  => 'warning',
+                        'verified' => 'info',
+                        'pending' => 'warning',
                         'rejected' => 'danger',
-                        default    => 'gray',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('submitted_at')
                     ->label('Submitted')
                     ->dateTime('d M Y, H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('reviewed_at')
-                    ->label('Reviewed')
-                    ->dateTime('d M Y, H:i')
-                    ->sortable()
-                    ->toggleable(),
+                Tables\Columns\TextColumn::make('verifiedBy.full_name')
+                    ->label('Verified By')
+                    ->toggleable()
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('approvedBy.full_name')
+                    ->label('Approved By')
+                    ->toggleable()
+                    ->placeholder('—'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']),
+                    ->options([
+                        'pending' => 'Pending',
+                        'verified' => 'Verified',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
                 Tables\Filters\SelectFilter::make('id_type')
                     ->label('ID Type')
                     ->options([
-                        'citizenship'     => 'Citizenship',
-                        'national_id'     => 'National ID',
-                        'passport'        => 'Passport',
+                        'citizenship' => 'Citizenship',
+                        'national_id' => 'National ID',
+                        'passport' => 'Passport',
                         'driving_license' => 'Driving License',
                     ]),
             ])
             ->actions([
+                Actions\Action::make('verify')
+                    ->label('Verify')
+                    ->icon('heroicon-o-magnifying-glass-circle')
+                    ->color('info')
+                    ->visible(fn (KycVerification $record) => $record->status === 'pending' && static::userCan('kyc.verify'))
+                    ->requiresConfirmation()
+                    ->form([
+                        Select::make('verified_by_staff_id')
+                            ->label('Verified By (Staff)')
+                            ->options(fn () => Staff::where('is_active', true)->pluck('full_name', 'staff_id'))
+                            ->searchable()
+                            ->native(false)
+                            ->required(),
+                    ])
+                    ->action(function (KycVerification $record, array $data) {
+                        $record->update([
+                            'status' => 'verified',
+                            'verified_by_staff_id' => $data['verified_by_staff_id'],
+                            'verified_at' => now(),
+                            'admin_note' => null,
+                        ]);
+                        Notification::make()->title('KYC verified — awaiting final approval')->success()->send();
+                    }),
                 Actions\Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
+                    ->visible(fn (KycVerification $record) => $record->status === 'verified' && static::userCan('kyc.approve'))
                     ->requiresConfirmation()
-                    ->hidden(fn (KycVerification $record) => $record->status === 'approved')
-                    ->action(function (KycVerification $record) {
-                        $record->update(['status' => 'approved', 'reviewed_at' => now(), 'admin_note' => null]);
+                    ->form([
+                        Select::make('approved_by_staff_id')
+                            ->label('Approved By (Staff)')
+                            ->options(fn () => Staff::where('is_active', true)->pluck('full_name', 'staff_id'))
+                            ->searchable()
+                            ->native(false)
+                            ->required(),
+                    ])
+                    ->action(function (KycVerification $record, array $data) {
+                        $record->update([
+                            'status' => 'approved',
+                            'approved_by_staff_id' => $data['approved_by_staff_id'],
+                            'approved_at' => now(),
+                            'reviewed_at' => now(),
+                            'admin_note' => null,
+                        ]);
                         Notification::make()->title('KYC approved')->success()->send();
                     }),
                 Actions\Action::make('reject')
                     ->label('Reject')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->hidden(fn (KycVerification $record) => $record->status === 'rejected')
+                    ->visible(fn (KycVerification $record) => in_array($record->status, ['pending', 'verified'], true)
+                        && (static::userCan('kyc.verify') || static::userCan('kyc.approve')))
                     ->form([
                         Textarea::make('admin_note')
                             ->label('Rejection reason (shown to user)')
@@ -280,12 +370,18 @@ class KycVerificationResource extends Resource
                     ])
                     ->action(function (KycVerification $record, array $data) {
                         $record->update([
-                            'status'     => 'rejected',
+                            'status' => 'rejected',
                             'admin_note' => $data['admin_note'],
                             'reviewed_at' => now(),
                         ]);
                         Notification::make()->title('KYC rejected')->danger()->send();
                     }),
+                Actions\Action::make('downloadPdf')
+                    ->label('PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('gray')
+                    ->url(fn (KycVerification $record) => route('admin.kyc.pdf', $record->id))
+                    ->openUrlInNewTab(),
                 Actions\ViewAction::make(),
                 Actions\EditAction::make(),
             ])
@@ -305,10 +401,10 @@ class KycVerificationResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListKycVerifications::route('/'),
+            'index' => Pages\ListKycVerifications::route('/'),
             'create' => Pages\CreateKycVerification::route('/create'),
-            'view'   => Pages\ViewKycVerification::route('/{record}'),
-            'edit'   => Pages\EditKycVerification::route('/{record}/edit'),
+            'view' => Pages\ViewKycVerification::route('/{record}'),
+            'edit' => Pages\EditKycVerification::route('/{record}/edit'),
         ];
     }
 }

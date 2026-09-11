@@ -78,15 +78,19 @@ class MyPropertyResource extends Resource
     {
         $user = Auth::user();
 
-        return $user?->client_type === 'owner'
-            || ($user?->client_type === 'agent' && $user->approvedPoaOwnerClientIds() !== []);
+        if (! $user?->hasApprovedKyc()) {
+            return false;
+        }
+
+        return $user->client_type === 'owner'
+            || ($user->client_type === 'agent' && $user->approvedPoaOwnerClientIds() !== []);
     }
 
     public static function canCreate(): bool
     {
         $user = Auth::user();
 
-        return $user?->client_type === 'owner' && $user->kycVerification?->status === 'approved';
+        return $user?->client_type === 'owner' && $user->hasApprovedKyc();
     }
 
     public static function form(Schema $schema): Schema

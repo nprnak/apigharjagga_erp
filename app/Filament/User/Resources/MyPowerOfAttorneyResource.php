@@ -41,12 +41,16 @@ class MyPowerOfAttorneyResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::user()?->client_type === 'agent';
+        $user = Auth::user();
+
+        return $user?->client_type === 'agent' && $user->hasApprovedKyc();
     }
 
     public static function canCreate(): bool
     {
-        return Auth::user()?->client_type === 'agent';
+        $user = Auth::user();
+
+        return $user?->client_type === 'agent' && $user->hasApprovedKyc();
     }
 
     public static function getEloquentQuery(): Builder

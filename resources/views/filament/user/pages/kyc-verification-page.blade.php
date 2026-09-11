@@ -1,19 +1,67 @@
 <x-filament-panels::page>
     <div class="space-y-6">
 
+        <!-- Two-stage review progress -->
+        @php
+            $stageOrder = ['pending' => 1, 'verified' => 2, 'approved' => 3];
+            $currentStage = $stageOrder[$kycRecord?->status] ?? 0;
+        @endphp
+        @if($kycRecord && $kycRecord->status !== 'rejected')
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-[#0c0c0f]">
+                <ol class="flex items-center w-full text-xs font-medium text-center text-zinc-500 dark:text-zinc-400">
+                    @foreach ([1 => 'Submitted', 2 => 'Verified (Document Officer)', 3 => 'Approved (KYC Approver)'] as $stage => $stageLabel)
+                        <li class="flex items-center {{ $stage < 3 ? 'w-full' : '' }} {{ $currentStage >= $stage ? 'text-emerald-600 dark:text-emerald-400' : '' }}">
+                            <span class="flex items-center justify-center w-7 h-7 rounded-full shrink-0 {{ $currentStage >= $stage ? 'bg-emerald-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800' }}">
+                                @if($currentStage > $stage || $currentStage === 3 && $stage === 3)
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                @else
+                                    {{ $stage }}
+                                @endif
+                            </span>
+                            <span class="mx-2 hidden sm:inline">{{ $stageLabel }}</span>
+                            @if($stage < 3)
+                                <div class="flex-1 h-0.5 mx-1 {{ $currentStage > $stage ? 'bg-emerald-600' : 'bg-zinc-100 dark:bg-zinc-800' }}"></div>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        @endif
+
         <!-- Status Notification Banner -->
         @if($kycRecord?->status === 'approved')
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+                <div class="flex items-center justify-between gap-3.5">
+                    <div class="flex items-center gap-3.5">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shrink-0">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-900 dark:text-emerald-200">KYC Verification Completed & Approved</h3>
+                            <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                Approved on {{ $kycRecord->approved_at?->format('d M Y, h:i A') ?? 'Verified Record' }}. Your identity record is fully registered under Annex F standards.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('kyc.my.pdf') }}" target="_blank" class="fi-btn fi-btn-size-md inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 shrink-0">
+                        Download Certificate (PDF)
+                    </a>
+                </div>
+            </div>
+        @elseif($kycRecord?->status === 'verified')
+            <div class="rounded-2xl border border-sky-200 bg-sky-50/70 p-5 dark:border-sky-900/50 dark:bg-sky-950/30">
                 <div class="flex items-center gap-3.5">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shrink-0">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white shrink-0">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-900 dark:text-emerald-200">KYC Verification Completed & Approved</h3>
-                        <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
-                            Approved on {{ $kycRecord->reviewed_at?->format('d M Y, h:i A') ?? 'Verified Record' }}. Your identity record is fully registered under Annex F standards.
+                        <h3 class="text-sm font-bold text-sky-900 dark:text-sky-200">Documents Verified — Awaiting Final Approval</h3>
+                        <p class="text-xs text-sky-700 dark:text-sky-400 mt-0.5">
+                            Verified on {{ $kycRecord->verified_at?->format('d M Y, h:i A') ?? 'Recently' }}. Your KYC Approver is now completing the final sign-off.
                         </p>
                     </div>
                 </div>

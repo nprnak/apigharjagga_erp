@@ -58,9 +58,23 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    /**
+     * @return HasOne<KycVerification, $this>
+     */
     public function kycVerification(): HasOne
     {
         return $this->hasOne(KycVerification::class);
+    }
+
+    /**
+     * Whether this login has cleared the two-stage Annex-F KYC review
+     * (verified, then approved). Every self-service User-panel resource
+     * gates its canViewAny() on this so a new account sees only the KYC
+     * page until identity verification is complete.
+     */
+    public function hasApprovedKyc(): bool
+    {
+        return $this->kycVerification?->status === 'approved';
     }
 
     /**

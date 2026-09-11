@@ -24,37 +24,10 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'tab' => $tab,
+            // The full Annex-F KYC form and its data now live entirely on the
+            // Filament "kyc-verification-page" — this dashboard only needs
+            // the status to render its summary badge and CTA.
             'kycStatus' => $kyc?->status,
-            'kyc' => $kyc ? [
-                'status' => $kyc->status,
-                'id_type' => $kyc->id_type,
-                'full_name' => $kyc->full_name,
-                'father_mother_name' => $kyc->father_mother_name,
-                'spouse_name' => $kyc->spouse_name,
-                'citizenship_no' => $kyc->citizenship_no,
-                'date_of_birth' => $kyc->date_of_birth?->format('Y-m-d'),
-                'gender' => $kyc->gender,
-                'nationality' => $kyc->nationality,
-                'occupation' => $kyc->occupation,
-                'mobile_no' => $kyc->mobile_no,
-                'email' => $kyc->email,
-                'permanent_province' => $kyc->permanent_province,
-                'permanent_district' => $kyc->permanent_district,
-                'permanent_municipality' => $kyc->permanent_municipality,
-                'permanent_ward_no' => $kyc->permanent_ward_no,
-                'permanent_tole' => $kyc->permanent_tole,
-                'current_province' => $kyc->current_province,
-                'current_district' => $kyc->current_district,
-                'current_municipality' => $kyc->current_municipality,
-                'current_ward_no' => $kyc->current_ward_no,
-                'current_tole' => $kyc->current_tole,
-                'id_document_path' => $kyc->id_document_path,
-                'selfie_photo_path' => $kyc->selfie_photo_path,
-                'selfie_photo_url' => $kyc->selfie_photo_path ? '/storage/'.ltrim($kyc->selfie_photo_path, '/') : null,
-                'id_document_url' => $kyc->id_document_path ? '/storage/'.ltrim($kyc->id_document_path, '/') : null,
-                'admin_note' => $kyc->admin_note,
-                'submitted_at' => $kyc->submitted_at?->toIso8601String(),
-            ] : null,
             'listingCounts' => [
                 'pending' => (int) ($counts['pending'] ?? 0),
                 'approved' => (int) ($counts['approved'] ?? 0),

@@ -56,6 +56,8 @@ class Role extends Model
             'inquiries.manage' => 'Manage Inquiries',
             'kyc.view' => 'View KYC Verifications',
             'kyc.manage' => 'Manage KYC Verifications',
+            'kyc.verify' => 'Verify KYC Submissions (Stage 1)',
+            'kyc.approve' => 'Approve KYC Verifications (Stage 2)',
             'staff.view' => 'View Staff Directory',
             'staff.manage' => 'Manage Staff Directory',
             'complaints.view' => 'View Complaints',

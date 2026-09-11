@@ -54,14 +54,16 @@ class MyValuationRequestResource extends Resource
      */
     public static function canViewAny(): bool
     {
-        return Auth::user()?->client_type === 'owner';
+        $user = Auth::user();
+
+        return $user?->client_type === 'owner' && $user->hasApprovedKyc();
     }
 
     public static function canCreate(): bool
     {
         $user = Auth::user();
 
-        return $user?->client_type === 'owner' && $user->kycVerification?->status === 'approved';
+        return $user?->client_type === 'owner' && $user->hasApprovedKyc();
     }
 
     public static function form(Schema $schema): Schema

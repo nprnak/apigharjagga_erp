@@ -116,6 +116,13 @@ class UserSeeder extends Seeder
                 'staff_role' => 'IT Support / System Administrator',
             ],
             [
+                'name' => 'API GharJagga KYC Approver',
+                'email' => 'kycapprover@apigharjagga.com',
+                'password' => 'KycApprover@123',
+                'role' => 'admin',
+                'staff_role' => 'KYC Approver',
+            ],
+            [
                 'name' => 'API GharJagga Owner Demo',
                 'email' => 'user@apigharjagga.com',
                 'password' => 'User@123',

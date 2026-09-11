@@ -50,7 +50,7 @@ class MyAgreementResource extends Resource
     {
         $user = Auth::user();
 
-        return in_array($user?->client_type, ['owner', 'buyer'], true);
+        return in_array($user?->client_type, ['owner', 'buyer'], true) && $user->hasApprovedKyc();
     }
 
     public static function getEloquentQuery(): Builder

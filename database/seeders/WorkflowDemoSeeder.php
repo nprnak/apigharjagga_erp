@@ -408,6 +408,62 @@ class WorkflowDemoSeeder extends Seeder
             );
         }
 
+        // Tenant and Agent demo logins are pre-approved (unlike Investor above,
+        // which is deliberately left pending) so their own portal resources —
+        // Rental Listings, Power of Attorney — are testable without first
+        // walking through the verify/approve flow on that specific account.
+        if ($tenantUser = $this->users['tenant@apigharjagga.com'] ?? null) {
+            KycVerification::firstOrCreate(
+                ['user_id' => $tenantUser->id],
+                [
+                    'full_name' => 'Tenant Demo Account',
+                    'citizenship_no' => '27-01-82-00707',
+                    'date_of_birth' => '1991-06-10',
+                    'gender' => 'female',
+                    'nationality' => 'Nepali',
+                    'mobile_no' => '9841000007',
+                    'email' => $tenantUser->email,
+                    'permanent_province' => 'Bagmati',
+                    'permanent_district' => 'Lalitpur',
+                    'permanent_municipality' => 'Lalitpur Metropolitan City',
+                    'permanent_ward_no' => '08',
+                    'id_document_path' => 'demo/kyc/tenant-citizenship.jpg',
+                    'id_type' => 'citizenship',
+                    'status' => 'approved',
+                    'submitted_at' => Carbon::now()->subDays(30),
+                    'verified_at' => Carbon::now()->subDays(29),
+                    'approved_at' => Carbon::now()->subDays(28),
+                    'reviewed_at' => Carbon::now()->subDays(28),
+                ],
+            );
+        }
+
+        if ($agentUser = $this->users['agent@apigharjagga.com'] ?? null) {
+            KycVerification::firstOrCreate(
+                ['user_id' => $agentUser->id],
+                [
+                    'full_name' => 'Agent Demo Account',
+                    'citizenship_no' => '27-01-79-00808',
+                    'date_of_birth' => '1987-09-25',
+                    'gender' => 'male',
+                    'nationality' => 'Nepali',
+                    'mobile_no' => '9841000008',
+                    'email' => $agentUser->email,
+                    'permanent_province' => 'Bagmati',
+                    'permanent_district' => 'Kathmandu',
+                    'permanent_municipality' => 'Kathmandu Metropolitan City',
+                    'permanent_ward_no' => '12',
+                    'id_document_path' => 'demo/kyc/agent-citizenship.jpg',
+                    'id_type' => 'citizenship',
+                    'status' => 'approved',
+                    'submitted_at' => Carbon::now()->subDays(45),
+                    'verified_at' => Carbon::now()->subDays(44),
+                    'approved_at' => Carbon::now()->subDays(43),
+                    'reviewed_at' => Carbon::now()->subDays(43),
+                ],
+            );
+        }
+
         return [
             [
                 'owner' => $ownerClient,

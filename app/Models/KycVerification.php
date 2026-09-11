@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -12,12 +13,15 @@ use Illuminate\Support\Carbon;
  * @property string|null $full_name
  * @property string|null $father_mother_name
  * @property string|null $spouse_name
+ * @property string|null $grandfather_name
  * @property string|null $citizenship_no
  * @property string|null $date_of_birth
  * @property string|null $gender
  * @property string|null $nationality
  * @property string|null $occupation
  * @property string|null $mobile_no
+ * @property string|null $alt_contact_no
+ * @property string|null $telephone_no
  * @property string|null $email
  * @property string|null $permanent_province
  * @property string|null $permanent_district
@@ -31,8 +35,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $current_tole
  * @property string $id_document_path
  * @property string|null $selfie_photo_path
+ * @property string|null $signature_path
+ * @property Carbon|null $signature_date
  * @property string $id_type
  * @property string $status
+ * @property int|null $verified_by_staff_id
+ * @property Carbon|null $verified_at
+ * @property int|null $approved_by_staff_id
+ * @property Carbon|null $approved_at
  * @property string|null $admin_note
  * @property Carbon|null $submitted_at
  * @property Carbon|null $reviewed_at
@@ -46,12 +56,15 @@ class KycVerification extends Model
         'full_name',
         'father_mother_name',
         'spouse_name',
+        'grandfather_name',
         'citizenship_no',
         'date_of_birth',
         'gender',
         'nationality',
         'occupation',
         'mobile_no',
+        'alt_contact_no',
+        'telephone_no',
         'email',
         'permanent_province',
         'permanent_district',
@@ -65,8 +78,14 @@ class KycVerification extends Model
         'current_tole',
         'id_document_path',
         'selfie_photo_path',
+        'signature_path',
+        'signature_date',
         'id_type',
         'status',
+        'verified_by_staff_id',
+        'verified_at',
+        'approved_by_staff_id',
+        'approved_at',
         'admin_note',
         'submitted_at',
         'reviewed_at',
@@ -74,12 +93,40 @@ class KycVerification extends Model
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'reviewed_at'  => 'datetime',
+        'reviewed_at' => 'datetime',
         'date_of_birth' => 'date',
+        'signature_date' => 'datetime',
+        'verified_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'verified_by_staff_id', 'staff_id');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'approved_by_staff_id', 'staff_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(KycVerificationDocument::class, 'kyc_verification_id', 'id');
+    }
+
+    /**
+     * The fixed Annex-F document checklist every applicant must satisfy.
+     * Kept as a single source of truth so the Wizard step, the admin
+     * resource, and the PDF export all list the same required documents.
+     */
+    public static function requiredDocumentTypeNames(): array
+    {
+        return ['Citizenship Copy', 'Passport Size Photo', 'Proof of Current Address'];
     }
 }
