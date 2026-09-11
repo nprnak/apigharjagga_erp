@@ -285,6 +285,32 @@
                     @endif
                 </div>
 
+                {{-- Photograph & Identity Document --}}
+                <div class="mt-6">
+                    <div class="mb-2 flex items-baseline gap-2 border-b border-zinc-900 pb-1 dark:border-zinc-100">
+                        <h2 class="text-sm font-bold text-zinc-900 dark:text-zinc-100">Photograph &amp; Identity Document</h2>
+                        <span class="np text-xs text-zinc-400">/ फोटो र परिचयपत्र</span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 py-1 sm:grid-cols-2">
+                        <div class="text-center">
+                            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">Passport-Size Photo</div>
+                            @if($k->selfie_photo_path)
+                                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($k->selfie_photo_path) }}" alt="Passport-size photo" class="mx-auto h-32 w-auto rounded border border-zinc-200 object-cover dark:border-zinc-700">
+                            @else
+                                <div class="mx-auto flex h-32 w-24 items-center justify-center rounded border border-dashed border-zinc-300 text-[10px] text-zinc-400 dark:border-zinc-700">No photo</div>
+                            @endif
+                        </div>
+                        <div class="text-center">
+                            <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">Identity Document ({{ $k->id_type ? ucfirst(str_replace('_', ' ', $k->id_type)) : '—' }})</div>
+                            @if($k->id_document_path)
+                                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($k->id_document_path) }}" alt="Identity document" class="mx-auto h-32 w-auto rounded border border-zinc-200 object-cover dark:border-zinc-700">
+                            @else
+                                <div class="mx-auto flex h-32 w-24 items-center justify-center rounded border border-dashed border-zinc-300 text-[10px] text-zinc-400 dark:border-zinc-700">No document</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
                 {{-- 7. Required Service Selection --}}
                 <div class="mt-6">
                     <div class="mb-2 flex items-baseline gap-2 border-b border-zinc-900 pb-1 dark:border-zinc-100">
@@ -365,6 +391,9 @@
                 <div class="mt-8 grid grid-cols-1 gap-6 border-t border-zinc-100 pt-4 sm:grid-cols-3 dark:border-zinc-800">
                     <div class="border-t border-zinc-800 pt-2 dark:border-zinc-200">
                         <h4 class="text-xs font-bold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">Applicant</h4>
+                        @if($k->signature_path)
+                            <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($k->signature_path) }}" alt="Signature" class="mt-1 h-10 max-w-[140px] object-contain">
+                        @endif
                         <div class="mt-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">{{ $k->full_name }}</div>
                         <div class="text-xs text-zinc-400">{{ optional($k->signature_date)->format('d M Y') ?: '—' }}</div>
                     </div>

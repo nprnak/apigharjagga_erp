@@ -546,6 +546,30 @@ black-on-white regardless of the active theme, then re-asserting the few
 colors that carry meaning (selected pills, status badges, the approval
 seal) on top of that base.
 
+**Brought the PDF and the in-app summary/print page into exact parity.**
+The two had drifted apart after several rounds of edits — different
+titles, the PDF's stamp only appearing when `approved` versus the
+summary's seal appearing from `pending` onward, Client Type/Purpose/
+Property Type/Services shown as plain text in the PDF but as pills in
+the summary, and the PDF missing the submission-details strip. Rebuilt
+`resources/views/pdf/kyc_verification.blade.php` section-for-section
+against the summary page so both now show: the same title, the same
+submission strip (Client ID / Submitted / Verified / Approved), the same
+stamp/seal logic (SUBMITTED/VERIFIED/APPROVED, shown from `pending`
+onward, matching color per stage), and the same pill-style rendering for
+Client Type, Purpose, Property Type, and Required Services (every
+option listed, selected ones highlighted) instead of comma-separated
+text. Also added the Photograph/Identity Document thumbnails and the
+Applicant's signature image to the in-app summary page, which the PDF
+already had but the summary didn't.
+
+Verified: rendered both the summary page and the PDF from the exact same
+KYC record (organization details, multi-select purpose/property type,
+one selected service, verifier and approver names, digital client ID)
+and confirmed every one of those values appears in both outputs, and
+that both list the Annex F sections in the identical order
+(1, 2, 3, 4, 5, 7, 8, 9, 10 — §6 still deliberately absent).
+
 ## Deferred / Out of Scope for Now
 
 - **Native mobile apps** (Customer/Buyer/Investor/Tenant) — treated as
