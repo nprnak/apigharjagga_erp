@@ -536,6 +536,16 @@ records (approved directly by the seeder, never through the Verify
 action, so `digital_client_id` is null) still render cleanly everywhere
 rather than erroring on the missing value.
 
+**Bug fix — Print showed a blank page in dark mode.** The summary page's
+light-on-dark theme colors survive into the print stylesheet (the browser
+drops the dark background when printing, but the text stays whatever
+color the current theme set it to), so viewing the page in dark mode and
+printing produced near-white text on a white page — readable on screen,
+invisible on paper. Fixed by forcing the printable region to plain
+black-on-white regardless of the active theme, then re-asserting the few
+colors that carry meaning (selected pills, status badges, the approval
+seal) on top of that base.
+
 ## Deferred / Out of Scope for Now
 
 - **Native mobile apps** (Customer/Buyer/Investor/Tenant) — treated as

@@ -20,7 +20,37 @@
         @media print {
             .no-print { display: none !important; }
             .fi-sidebar, .fi-topbar { display: none !important; }
-            #kyc-sheet { box-shadow: none !important; border: 0 !important; }
+
+            /* In dark mode the summary renders light-on-dark; printing drops
+               the dark background but the browser leaves the light text
+               color in place, so it disappears against the printed page.
+               Force a plain black-on-white sheet regardless of the current
+               theme, then re-assert the few colors that carry meaning
+               (selected pills, status badges, the seal) on top of that. */
+            html, body { background: #fff !important; }
+            #kyc-sheet {
+                box-shadow: none !important;
+                border: 1px solid #999 !important;
+                background: #fff !important;
+                color: #18242E !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            #kyc-sheet * {
+                color: inherit !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            #kyc-sheet .kyc-row .k { color: #5C6B76 !important; }
+            #kyc-sheet .kyc-row .v.blank { color: #767676 !important; }
+            #kyc-sheet .kyc-pill { border-color: #C3CBD1 !important; color: #767676 !important; }
+            #kyc-sheet .kyc-pill.on { color: #125E4A !important; background: #EEF4F0 !important; border-color: #9BC4B4 !important; }
+            #kyc-sheet .kyc-secnum { background: #18242E !important; color: #fff !important; }
+            #kyc-sheet [class*="border-emerald"] { border-color: #9BC4B4 !important; color: #14532d !important; }
+            #kyc-sheet [class*="border-sky"] { border-color: #7DB8D6 !important; color: #075985 !important; }
+            #kyc-sheet [class*="bg-emerald"] { background: #EEF4F0 !important; }
+            #kyc-sheet [class*="bg-amber"] { background: #FBF4E3 !important; }
+            #kyc-sheet [class*="text-amber"] { color: #8A6206 !important; }
         }
         .np { font-family: 'Noto Sans Devanagari', 'Kalimati', sans-serif; }
         .kyc-row { display: grid; grid-template-columns: 40% 1fr; gap: 0; border-bottom: 1px dashed #E2E7EA; padding: 5px 0; }
