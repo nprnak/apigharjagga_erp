@@ -5,10 +5,12 @@ namespace App\Filament\Resources;
 use App\Filament\Concerns\AuthorizesViaRole;
 use App\Filament\Resources\PropertyResource\Pages;
 use App\Models\Property;
+use App\Models\Staff;
 use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -266,6 +268,13 @@ class PropertyResource extends Resource
             ]);
     }
 
+    /**
+     * The single "Admin Reviews Listing" decision node in the Annex-A
+     * mermaid flow. Approving here also completes §10 Office Use Only on
+     * the associated PropertyListing (assigned officer, legal
+     * verification, listing status) in the same step, rather than leaving
+     * those columns permanently unset as before.
+     */
     public static function approveAction(): Actions\Action
     {
         return Actions\Action::make('approve')
@@ -273,14 +282,31 @@ class PropertyResource extends Resource
             ->icon('heroicon-o-check-circle')
             ->color('success')
             ->requiresConfirmation()
+            ->modalDescription('Approving also completes Annex A §10 Office Use Only on this listing.')
             ->visible(fn () => static::userHasPermission('properties.approve'))
             ->hidden(fn (Property $record) => $record->approval_status === 'approved')
-            ->action(function (Property $record) {
+            ->form([
+                Select::make('assigned_officer_id')
+                    ->label('Assigned / Reviewing Officer')
+                    ->options(fn () => Staff::where('is_active', true)->pluck('full_name', 'staff_id'))
+                    ->searchable()
+                    ->native(false)
+                    ->required(),
+            ])
+            ->action(function (Property $record, array $data) {
                 $record->update([
                     'approval_status' => 'approved',
                     'status' => 'listed',
                     'is_listed' => true,
                 ]);
+
+                $record->listings()->latest()->first()?->update([
+                    'assigned_officer_id' => $data['assigned_officer_id'],
+                    'legal_verification_status' => 'completed',
+                    'listing_status' => 'approved',
+                    'remarks' => null,
+                ]);
+
                 Notification::make()->title('Property approved & listed')->success()->send();
             });
     }
@@ -294,12 +320,31 @@ class PropertyResource extends Resource
             ->requiresConfirmation()
             ->visible(fn () => static::userHasPermission('properties.approve'))
             ->hidden(fn (Property $record) => $record->approval_status === 'rejected')
-            ->action(function (Property $record) {
+            ->form([
+                Select::make('assigned_officer_id')
+                    ->label('Reviewing Officer')
+                    ->options(fn () => Staff::where('is_active', true)->pluck('full_name', 'staff_id'))
+                    ->searchable()
+                    ->native(false)
+                    ->required(),
+                Textarea::make('remarks')
+                    ->label('Feedback to Applicant (shown on their listing)')
+                    ->required()
+                    ->rows(3),
+            ])
+            ->action(function (Property $record, array $data) {
                 $record->update([
                     'approval_status' => 'rejected',
                     'status' => 'rejected',
                     'is_listed' => false,
                 ]);
+
+                $record->listings()->latest()->first()?->update([
+                    'assigned_officer_id' => $data['assigned_officer_id'],
+                    'listing_status' => 'rejected',
+                    'remarks' => $data['remarks'],
+                ]);
+
                 Notification::make()->title('Property rejected')->danger()->send();
             });
     }

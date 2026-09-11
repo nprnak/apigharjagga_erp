@@ -34,17 +34,17 @@ class PropertyListing extends Model
     ];
 
     protected $casts = [
-        'expected_selling_price'   => 'decimal:2',
+        'expected_selling_price' => 'decimal:2',
         'minimum_acceptable_price' => 'decimal:2',
-        'rental_amount'            => 'decimal:2',
-        'negotiable'               => 'boolean',
-        'inspection_required'      => 'boolean',
-        'valuation_required'       => 'boolean',
-        'photographs_received'     => 'boolean',
-        'gis_location_verified'    => 'boolean',
-        'effective_date'           => 'date',
-        'date_received'            => 'date',
-        'inspection_date'          => 'date',
+        'rental_amount' => 'decimal:2',
+        'negotiable' => 'boolean',
+        'inspection_required' => 'boolean',
+        'valuation_required' => 'boolean',
+        'photographs_received' => 'boolean',
+        'gis_location_verified' => 'boolean',
+        'effective_date' => 'date',
+        'date_received' => 'date',
+        'inspection_date' => 'date',
     ];
 
     public function property(): BelongsTo
@@ -55,5 +55,15 @@ class PropertyListing extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'applicant_client_id', 'client_id');
+    }
+
+    public function assignedOfficer(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'assigned_officer_id', 'staff_id');
+    }
+
+    public function receivedBy(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'received_by_staff_id', 'staff_id');
     }
 }

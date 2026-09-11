@@ -5,19 +5,24 @@ namespace App\Filament\User\Resources;
 use App\Filament\Support\LocationSelects;
 use App\Filament\User\Resources\MyPropertyResource\Pages;
 use App\Models\Property;
+use App\Models\PropertyFeatureType;
 use Filament\Actions;
-use Filament\Forms\Components\Field;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 
@@ -34,6 +39,13 @@ class MyPropertyResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'property_code';
+
+    /**
+     * Statuses that lock the record against further edits — only a fresh
+     * rejection can be resubmitted; everything else (pending/approved) is
+     * frozen while under or past review, same convention as KYC.
+     */
+    public const LOCKED_STATUSES = ['pending', 'approved'];
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {
@@ -62,7 +74,7 @@ class MyPropertyResource extends Resource
                     $q->orWhereIn('owner_client_id', $approvedOwnerClientIds);
                 }
             })
-            ->with(['photos', 'address'])
+            ->with(['photos', 'address', 'documents.docType', 'features', 'listings'])
             ->orderByDesc('property_id');
     }
 
@@ -93,42 +105,485 @@ class MyPropertyResource extends Resource
         return $user?->client_type === 'owner' && $user->hasApprovedKyc();
     }
 
+    /**
+     * Only a fresh rejection (or, in practice, never for this record) can
+     * be resubmitted — once pending or approved, the listing is frozen,
+     * matching the mermaid flow's single admin-review gate.
+     */
+    public static function canEdit(Model $record): bool
+    {
+        return ! in_array($record->approval_status, self::LOCKED_STATUSES, true);
+    }
+
+    /**
+     * Annex A §1 Applicant Details — pulled straight from the owner's own
+     * approved KYC record, never re-collected here.
+     *
+     * @return array<int, Component>
+     */
+    public static function applicantDetailsFields(): array
+    {
+        $kyc = Auth::user()?->kycVerification;
+
+        $row = fn (string $label, string $np, ?string $value) => new HtmlString(
+            '<div style="display:flex;justify-content:space-between;border-bottom:1px dashed #E2E7EA;padding:4px 0;font-size:0.8rem;">'
+            .'<span style="color:#5C6B76;">'.e($label).' <span style="display:block;font-size:0.7rem;">'.e($np).'</span></span>'
+            .'<span style="font-weight:600;">'.e($value ?: 'Not provided').'</span>'
+            .'</div>',
+        );
+
+        return [
+            Placeholder::make('applicant_summary')
+                ->label('')
+                ->content(new HtmlString(
+                    $row('Full Name', 'पूरा नाम', $kyc?->full_name)->toHtml()
+                    .$row('Citizenship No.', 'नागरिकता नं.', $kyc?->citizenship_no)->toHtml()
+                    .$row('Mobile No.', 'मोबाइल नम्बर', $kyc?->mobile_no)->toHtml()
+                    .$row('Email', 'इमेल', $kyc?->email)->toHtml()
+                    .$row('Permanent Address', 'स्थायी ठेगाना', collect([$kyc?->permanent_tole, $kyc?->permanent_municipality, $kyc?->permanent_district, $kyc?->permanent_province])->filter()->implode(', ') ?: null)->toHtml(),
+                )),
+        ];
+    }
+
+    /**
+     * Annex A §2 Property Owner Details.
+     *
+     * @return array<int, Component>
+     */
+    public static function ownerDetailsFields(): array
+    {
+        return [
+            Select::make('ownership_role')
+                ->label('Ownership Capacity (स्वामित्वको हैसियत)')
+                ->options([
+                    'self' => 'Sole Owner — I am the owner (म आफैं धनी हुँ)',
+                    'family_member' => 'Family Member',
+                    'authorized_representative' => 'Authorized Power of Attorney / Representative',
+                    'company' => 'Company / Corporate Entity',
+                ])
+                ->native(false)
+                ->live()
+                ->required()
+                ->columnSpanFull(),
+            TextInput::make('owner_full_name')
+                ->label("Owner's Full Name (धनीको पूरा नाम)")
+                ->maxLength(150)
+                ->required(fn (Get $get) => $get('ownership_role') !== 'self')
+                ->visible(fn (Get $get) => $get('ownership_role') !== 'self'),
+            TextInput::make('owner_citizenship_no')
+                ->label("Owner's Citizenship No. (धनीको नागरिकता नं.)")
+                ->maxLength(50)
+                ->visible(fn (Get $get) => $get('ownership_role') !== 'self'),
+            TextInput::make('owner_relation')
+                ->label('Relationship / Basis of Authority (सम्बन्ध)')
+                ->placeholder('e.g. Son, Registered Power of Attorney, Managing Director')
+                ->maxLength(100)
+                ->visible(fn (Get $get) => $get('ownership_role') !== 'self'),
+        ];
+    }
+
+    /**
+     * Annex A §3 Property Details — property type, Address of Property,
+     * Land Information, and (conditionally) Building Details.
+     *
+     * @return array<int, Component>
+     */
+    public static function propertyDetailsFields(): array
+    {
+        return [
+            Select::make('property_type')
+                ->label('Property Category (सम्पत्तिको किसिम)')
+                ->options([
+                    'land' => 'Land (जग्गा)',
+                    'house' => 'House (घर)',
+                    'apartment' => 'Apartment (अपार्टमेन्ट)',
+                    'commercial_building' => 'Commercial Building',
+                    'office_space' => 'Office Space',
+                    'industrial_property' => 'Industrial Property',
+                    'agricultural_land' => 'Agricultural Land (कृषि जग्गा)',
+                    'other' => 'Other',
+                ])
+                ->native(false)
+                ->searchable()
+                ->live()
+                ->required()
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    public static function addressFields(): array
+    {
+        return [
+            ...LocationSelects::make(
+                province: 'province',
+                district: 'district',
+                municipality: 'municipality',
+                ward: 'ward_no',
+                required: true,
+            ),
+            TextInput::make('tole_locality')
+                ->label('Tole / Locality / Landmark (टोल/स्थान)')
+                ->prefixIcon('heroicon-m-map-pin')
+                ->columnSpanFull()
+                ->required()
+                ->maxLength(150),
+        ];
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    public static function landInformationFields(): array
+    {
+        return [
+            TextInput::make('kitta_no')
+                ->label('Kitta Number (कित्ता नं.)')
+                ->maxLength(50),
+            TextInput::make('area')
+                ->label('Land Area (जग्गाको क्षेत्रफल)')
+                ->placeholder('0-4-2-0 or 1500 sq.ft')
+                ->hint('Ropani-Aana-Paisa-Daam or sq.ft')
+                ->required()
+                ->maxLength(100),
+            TextInput::make('map_sheet_no')
+                ->label('Map Sheet No. (नक्सा पाना नं.)')
+                ->maxLength(50),
+            Select::make('ownership_type')
+                ->label('Ownership Type (स्वामित्व प्रकार)')
+                ->options(['private' => 'Private', 'joint' => 'Joint', 'other' => 'Other'])
+                ->native(false),
+            TextInput::make('ownership_certificate_no')
+                ->label('Ownership Certificate No. (लालपुर्जा नं.)')
+                ->maxLength(50),
+            Select::make('road_access')
+                ->label('Road Access (सडक पहुँच)')
+                ->options(['yes' => 'Yes', 'no' => 'No'])
+                ->native(false),
+            TextInput::make('road_width')
+                ->label('Road Width (सडकको चौडाई)')
+                ->placeholder('e.g. 20 ft')
+                ->maxLength(50),
+            Select::make('facing_direction')
+                ->label('Facing Orientation (दिशा)')
+                ->options([
+                    'East' => 'East (पूर्व)',
+                    'West' => 'West (पश्चिम)',
+                    'North' => 'North (उत्तर)',
+                    'South' => 'South (दक्षिण)',
+                    'North-East' => 'North-East (ईशान)',
+                    'South-East' => 'South-East (आग्नेय)',
+                    'North-West' => 'North-West (वायव्य)',
+                    'South-West' => 'South-West (नैऋत्य)',
+                ])
+                ->native(false),
+        ];
+    }
+
+    /**
+     * Annex A §3 continued — Building Details, only relevant when the
+     * property type carries a structure at all.
+     *
+     * @return array<int, Component>
+     */
+    public static function buildingDetailsFields(): array
+    {
+        return [
+            TextInput::make('year_of_construction')
+                ->label('Year Built, B.S. / A.D. (निर्माण वर्ष)')
+                ->numeric()
+                ->minValue(1950),
+            TextInput::make('no_of_floors')
+                ->label('Number of Floors (तल्ला संख्या)')
+                ->numeric()
+                ->minValue(0),
+            TextInput::make('covered_area')
+                ->label('Covered / Built-up Area (ओगटेको क्षेत्रफल)')
+                ->placeholder('2400 sq.ft')
+                ->maxLength(100),
+            TextInput::make('structure_type')
+                ->label('Structure System (संरचना प्रकार)')
+                ->placeholder('RCC Frame / Load Bearing / Steel')
+                ->maxLength(100),
+            TextInput::make('roof_type')
+                ->label('Roof Type (छानाको प्रकार)')
+                ->maxLength(50),
+            TextInput::make('parking')
+                ->label('Parking Capacity (पार्किङ)')
+                ->placeholder('2 Cars + 4 Bikes')
+                ->maxLength(100),
+            Select::make('water_supply')
+                ->label('Water Supply (पानीको आपूर्ति)')
+                ->options(['municipal' => 'Municipal', 'well' => 'Well/Borehole', 'both' => 'Both', 'none' => 'None'])
+                ->native(false),
+            Select::make('electricity')
+                ->label('Electricity (बिजुली)')
+                ->options(['available' => 'Available', 'not_available' => 'Not Available'])
+                ->native(false),
+            Select::make('internet')
+                ->label('Internet (इन्टरनेट)')
+                ->options(['available' => 'Available', 'not_available' => 'Not Available'])
+                ->native(false),
+            Select::make('drainage')
+                ->label('Drainage / Sewerage (ढल निकास)')
+                ->options(['available' => 'Available', 'not_available' => 'Not Available'])
+                ->native(false),
+            TextInput::make('building_permit_no')
+                ->label('Building Permit / Naksa Pass No. (नक्सा पास नं.)')
+                ->maxLength(50),
+            Select::make('current_building_condition')
+                ->label('Current Condition (हालको अवस्था)')
+                ->options(['excellent' => 'Excellent', 'good' => 'Good', 'fair' => 'Fair', 'poor' => 'Poor'])
+                ->native(false),
+        ];
+    }
+
+    /**
+     * Annex A §4 Purpose of Listing.
+     *
+     * @return array<int, Component>
+     */
+    public static function purposeFields(): array
+    {
+        return [
+            Select::make('purpose_of_listing')
+                ->label('Purpose of Listing (सूचीकरणको उद्देश्य)')
+                ->options([
+                    'sale' => 'For Sale (बिक्री)',
+                    'rent' => 'For Rent (भाडा)',
+                    'lease' => 'Long-Term Lease (लिज)',
+                    'exchange' => 'Exchange (साटासाट)',
+                    'investment' => 'Joint Investment (लगानी)',
+                    'other' => 'Other',
+                ])
+                ->default('sale')
+                ->native(false)
+                ->live()
+                ->required()
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * Annex A §5 Expected Price.
+     *
+     * @return array<int, Component>
+     */
+    public static function priceFields(): array
+    {
+        return [
+            TextInput::make('expected_selling_price')
+                ->label('Expected Selling Price (अपेक्षित मूल्य)')
+                ->numeric()
+                ->prefix('Rs.')
+                ->minValue(0)
+                ->visible(fn (Get $get) => in_array($get('purpose_of_listing'), ['sale', 'exchange', 'investment', 'other'], true)),
+            Toggle::make('negotiable')
+                ->label('Negotiable (मोलमोलाइ हुने)')
+                ->inline(false)
+                ->visible(fn (Get $get) => in_array($get('purpose_of_listing'), ['sale', 'exchange', 'investment', 'other'], true)),
+            TextInput::make('minimum_acceptable_price')
+                ->label('Minimum Acceptable Price (न्यूनतम स्वीकार्य मूल्य)')
+                ->numeric()
+                ->prefix('Rs.')
+                ->minValue(0)
+                ->visible(fn (Get $get) => in_array($get('purpose_of_listing'), ['sale', 'exchange', 'investment', 'other'], true)),
+            TextInput::make('rental_amount')
+                ->label('Expected Monthly Rent (मासिक भाडा)')
+                ->numeric()
+                ->prefix('Rs.')
+                ->minValue(0)
+                ->visible(fn (Get $get) => in_array($get('purpose_of_listing'), ['rent', 'lease'], true)),
+        ];
+    }
+
+    /**
+     * Annex A §6 Property Documents Submitted — deliberately excludes
+     * Citizenship Copy / Passport Photo / Proof of Address (already
+     * collected by KYC) and Authorization Letter / Power of Attorney
+     * (its own dedicated feature) so nothing is asked for twice.
+     *
+     * @return array<int, Component>
+     */
+    public static function documentFields(): array
+    {
+        return [
+            FileUpload::make('doc_ownership_certificate')
+                ->label('Ownership Certificate Copy — Lalpurja (लालपुर्जा प्रतिलिपि)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480),
+            FileUpload::make('doc_land_house')
+                ->label('Land / House Documents (जग्गा/घर कागजात)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480),
+            FileUpload::make('doc_tax_clearance')
+                ->label('Tax Clearance Certificate (कर चुक्ता प्रमाणपत्र)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480),
+            FileUpload::make('doc_utility_bills')
+                ->label('Utility Bills (उपभोक्ता बिल)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480),
+            FileUpload::make('doc_blueprint')
+                ->label('Blueprint / Naksa (नक्सा)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480)
+                ->visible(fn (Get $get) => in_array($get('property_type'), Property::BUILDING_TYPES, true)),
+            FileUpload::make('doc_building_completion')
+                ->label('Building Completion Certificate (घर नक्सा उत्तीर्ण प्रमाणपत्र)')
+                ->disk('public')->directory('properties/documents')
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
+                ->maxSize(20480)
+                ->visible(fn (Get $get) => in_array($get('property_type'), Property::BUILDING_TYPES, true)),
+        ];
+    }
+
+    /**
+     * Maps the synthetic upload field keys above to their document_types
+     * row, so submissions can be synced into the generic property_documents
+     * checklist table the same way KYC syncs its own checklist.
+     *
+     * @return array<string, string>
+     */
+    public static function documentFieldMap(): array
+    {
+        return [
+            'doc_ownership_certificate' => 'Ownership Certificate Copy',
+            'doc_land_house' => 'Land/House Documents',
+            'doc_tax_clearance' => 'Tax Clearance',
+            'doc_utility_bills' => 'Utility Bills',
+            'doc_blueprint' => 'Blueprint',
+            'doc_building_completion' => 'Building Completion Certificate',
+        ];
+    }
+
+    /**
+     * Annex A §7 Property Features.
+     *
+     * @return array<int, Component>
+     */
+    public static function featureFields(): array
+    {
+        return [
+            CheckboxList::make('feature_ids')
+                ->label('')
+                ->options(fn () => PropertyFeatureType::orderBy('feature_name')->pluck('feature_name', 'feature_id'))
+                ->columns(2)
+                ->gridDirection('row'),
+        ];
+    }
+
+    /**
+     * Annex A photographs of the property.
+     *
+     * @return array<int, Component>
+     */
+    public static function mediaFields(): array
+    {
+        return [
+            FileUpload::make('property_photos')
+                ->label('Property Photographs (तस्विरहरू)')
+                ->multiple()
+                ->reorderable()
+                ->panelLayout('grid')
+                ->image()
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+                ->maxFiles(12)
+                ->maxSize(20480)
+                ->disk('public')
+                ->directory('properties/photos')
+                ->openable()
+                ->downloadable()
+                ->imageEditor()
+                ->helperText('JPG, PNG or WebP up to 20 MB each. Add up to 12 — drag to reorder; the first photo becomes the cover.')
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * Declaration & signature, matching the KYC wizard's closing step.
+     *
+     * @return array<int, Component>
+     */
+    public static function declarationFields(): array
+    {
+        return [
+            Toggle::make('declaration_accepted')
+                ->label('Declaration (घोषणा)')
+                ->helperText('I hereby declare that the information provided above about this property is true and correct to the best of my knowledge, as required under Annex A of API GharJagga\'s property listing process.')
+                ->required()
+                ->accepted()
+                ->inline(false),
+            FileUpload::make('applicant_signature_path')
+                ->label('Signature (हस्ताक्षर)')
+                ->disk('public')
+                ->directory('properties/signatures')
+                ->image()
+                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
+                ->maxSize(4096)
+                ->required()
+                ->openable()
+                ->helperText('Upload a photo or scan of your handwritten signature (Max: 4MB).'),
+        ];
+    }
+
     public static function form(Schema $schema): Schema
     {
-        // Mirrors the admin PropertyResource workspace layout — an editable
-        // main column plus a read-only context sidebar — but exposes only
-        // fields the owner is allowed to see/edit. Admin-only controls
-        // (approval override, marketplace visibility toggle, owner/managed-by
-        // details) are intentionally left out.
         return $schema
             ->columns(['default' => 1, 'lg' => 3])
             ->components([
-                // ---- Main editable column ---------------------------------
+                Section::make('Applicant Details')
+                    ->description('From your approved KYC record — update it there if anything below is wrong.')
+                    ->icon('heroicon-o-identification')
+                    ->columnSpanFull()
+                    ->collapsible()
+                    ->schema(static::applicantDetailsFields()),
+
                 Group::make()
                     ->columnSpan(['default' => 1, 'lg' => 2])
                     ->schema([
-                        Section::make('Property Details & Specifications')
-                            ->description('Tell us what you are listing — its type, your ownership capacity, and the structural facts a buyer checks first.')
-                            ->icon('heroicon-o-home-modern')
+                        Section::make('Property Owner Details')
+                            ->icon('heroicon-o-user')
                             ->columns(2)
+                            ->schema(static::ownerDetailsFields()),
+
+                        Section::make('Property Details')
+                            ->icon('heroicon-o-home-modern')
                             ->schema(static::propertyDetailsFields()),
 
-                        Section::make('Location & Administrative Details')
-                            ->description('Where the property sits, as recorded by the local government. Buyers filter by these fields first.')
+                        Section::make('Address of Property')
                             ->icon('heroicon-o-map')
                             ->columns(2)
-                            ->collapsible()
-                            ->schema(static::locationFields()),
+                            ->schema(static::addressFields()),
 
-                        Section::make('Financials & Pricing Expectations')
-                            ->description('Set the numbers you expect. Fill the selling price for sales, the monthly rent for rentals — or both.')
+                        Section::make('Land Information')
+                            ->icon('heroicon-o-map-pin')
+                            ->columns(2)
+                            ->schema(static::landInformationFields()),
+
+                        Section::make('Building Details (If Applicable)')
+                            ->icon('heroicon-o-building-office-2')
+                            ->columns(2)
+                            ->visible(fn (Get $get) => in_array($get('property_type'), Property::BUILDING_TYPES, true))
+                            ->schema(static::buildingDetailsFields()),
+
+                        Section::make('Purpose of Listing')
+                            ->icon('heroicon-o-tag')
+                            ->schema(static::purposeFields()),
+
+                        Section::make('Expected Price')
                             ->icon('heroicon-o-banknotes')
                             ->columns(2)
-                            ->collapsible()
-                            ->schema(static::financialFields()),
+                            ->schema(static::priceFields()),
                     ]),
 
-                // ---- Read-only context sidebar ----------------------------
                 Group::make()
                     ->columnSpan(['default' => 1, 'lg' => 1])
                     ->schema([
@@ -162,18 +617,23 @@ class MyPropertyResource extends Resource
                                 Placeholder::make('created_at')
                                     ->label('Submitted')
                                     ->content(fn (?Property $record) => $record?->created_at?->format('d M Y, H:i') ?? '—'),
-                                Placeholder::make('updated_at')
-                                    ->label('Last Updated')
-                                    ->content(fn (?Property $record) => $record?->updated_at?->format('d M Y, H:i') ?? '—'),
                             ]),
                     ]),
 
-                // ---- Media, full width -------------------------------------
+                Section::make('Property Documents Submitted')
+                    ->icon('heroicon-o-document-check')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->schema(static::documentFields()),
+
+                Section::make('Property Features')
+                    ->icon('heroicon-o-sparkles')
+                    ->columnSpanFull()
+                    ->schema(static::featureFields()),
+
                 Section::make('Property Photographs & Media')
-                    ->description('Listings with photos get far more enquiries. Show the exterior, interior, road access, and surroundings.')
                     ->icon('heroicon-o-camera')
                     ->columnSpanFull()
-                    ->collapsible()
                     ->schema(static::mediaFields()),
             ]);
     }
@@ -201,182 +661,6 @@ class MyPropertyResource extends Resource
             ';background-color:'.$bg.';padding:0.125rem 0.625rem;font-size:0.75rem;font-weight:600;color:'.$text.'">'.
             e($label).'</span>'
         );
-    }
-
-    /**
-     * @return array<int, Field>
-     */
-    public static function propertyDetailsFields(): array
-    {
-        return [
-            TextInput::make('property_code')
-                ->label('Property Reference Code')
-                ->disabled()
-                ->prefixIcon('heroicon-m-hashtag')
-                ->placeholder('Auto-generated on submission')
-                ->columnSpanFull(),
-
-            Select::make('property_type')
-                ->label('Property Category')
-                ->options([
-                    'land' => 'Land (जग्गा)',
-                    'house' => 'House (घर)',
-                    'apartment' => 'Apartment (अपार्टमेन्ट)',
-                    'commercial_building' => 'Commercial Building',
-                    'office_space' => 'Office Space',
-                    'industrial_property' => 'Industrial Property',
-                    'agricultural_land' => 'Agricultural Land',
-                    'other' => 'Other',
-                ])
-                ->native(false)
-                ->searchable()
-                ->required(),
-
-            Select::make('ownership_role')
-                ->label('Ownership Capacity')
-                ->options([
-                    'self' => 'Sole Owner (Self)',
-                    'family_member' => 'Family Member',
-                    'authorized_representative' => 'Authorized Power of Attorney / Representative',
-                    'company' => 'Company / Corporate Entity',
-                ])
-                ->native(false)
-                ->required(),
-
-            Select::make('purpose_of_listing')
-                ->label('Listing Intent')
-                ->options([
-                    'sale' => 'For Sale (बिक्री)',
-                    'rent' => 'For Rent (भाडा)',
-                    'lease' => 'Long-Term Lease',
-                    'investment' => 'Joint Investment',
-                ])
-                ->default('sale')
-                ->native(false)
-                ->required(),
-
-            Select::make('facing_direction')
-                ->label('Facing Orientation (दिशा)')
-                ->options([
-                    'East' => 'East (पूर्व)',
-                    'West' => 'West (पश्चिम)',
-                    'North' => 'North (उत्तर)',
-                    'South' => 'South (दक्षिण)',
-                    'North-East' => 'North-East (ईशान)',
-                    'South-East' => 'South-East (आग्नेय)',
-                    'North-West' => 'North-West (वायव्य)',
-                    'South-West' => 'South-West (नैऋत्य)',
-                ])
-                ->native(false)
-                ->prefixIcon('heroicon-m-globe-alt'),
-
-            TextInput::make('kitta_no')
-                ->label('Kitta Number (कित्ता नं.)')
-                ->prefixIcon('heroicon-m-map-pin')
-                ->maxLength(50),
-
-            TextInput::make('area')
-                ->label('Land Area (जग्गाको क्षेत्रफल)')
-                ->placeholder('0-4-2-0 or 1500 sq.ft')
-                ->hint('Ropani-Aana or sq.ft')
-                ->maxLength(100),
-
-            TextInput::make('covered_area')
-                ->label('Covered / Built-up Area')
-                ->placeholder('2400 sq.ft')
-                ->maxLength(100),
-
-            TextInput::make('no_of_floors')
-                ->label('Number of Stories / Floors')
-                ->numeric()
-                ->minValue(0),
-
-            TextInput::make('year_of_construction')
-                ->label('Year Built (B.S. / A.D.)')
-                ->numeric()
-                ->minValue(1950),
-
-            TextInput::make('structure_type')
-                ->label('Structure System')
-                ->placeholder('RCC Frame / Load Bearing')
-                ->maxLength(100),
-
-            TextInput::make('parking')
-                ->label('Parking Capacity')
-                ->placeholder('2 Cars + 4 Bikes')
-                ->prefixIcon('heroicon-m-truck')
-                ->maxLength(100),
-        ];
-    }
-
-    /**
-     * @return array<int, Field>
-     */
-    public static function locationFields(): array
-    {
-        return [
-            ...LocationSelects::make(
-                province: 'province',
-                district: 'district',
-                municipality: 'municipality',
-                ward: 'ward_no',
-                required: true,
-            ),
-
-            TextInput::make('tole_locality')
-                ->label('Tole / Locality / Landmark')
-                ->prefixIcon('heroicon-m-map-pin')
-                ->columnSpanFull()
-                ->required()
-                ->maxLength(150),
-        ];
-    }
-
-    /**
-     * @return array<int, Field>
-     */
-    public static function financialFields(): array
-    {
-        return [
-            TextInput::make('expected_selling_price')
-                ->label('Expected Selling Price')
-                ->numeric()
-                ->prefix('Rs.')
-                ->minValue(0)
-                ->hint('NPR, negotiable'),
-
-            TextInput::make('rental_amount')
-                ->label('Expected Monthly Rental')
-                ->numeric()
-                ->prefix('Rs.')
-                ->minValue(0)
-                ->hint('NPR / month'),
-        ];
-    }
-
-    /**
-     * @return array<int, Field>
-     */
-    public static function mediaFields(): array
-    {
-        return [
-            FileUpload::make('property_photos')
-                ->label('Property Photographs (तस्विरहरू)')
-                ->multiple()
-                ->reorderable()
-                ->panelLayout('grid')
-                ->image()
-                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
-                ->maxFiles(12)
-                ->maxSize(20480)
-                ->disk('public')
-                ->directory('properties/photos')
-                ->openable()
-                ->downloadable()
-                ->imageEditor()
-                ->helperText('JPG, PNG or WebP up to 20 MB each. Add up to 12 — drag to reorder; the first photo becomes the cover.')
-                ->columnSpanFull(),
-        ];
     }
 
     public static function table(Table $table): Table
@@ -456,7 +740,7 @@ class MyPropertyResource extends Resource
             ->actions([
                 Actions\ViewAction::make(),
                 Actions\EditAction::make()
-                    ->hidden(fn (Property $record) => in_array($record->status, ['sold', 'rented', 'leased'])),
+                    ->hidden(fn (Property $record) => ! static::canEdit($record)),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');

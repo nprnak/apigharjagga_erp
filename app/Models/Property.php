@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -11,11 +12,22 @@ class Property extends Model
 {
     protected $primaryKey = 'property_id';
 
+    /**
+     * Annex A §3 "Building Details" only applies to these property types —
+     * land and agricultural land have no structure to describe. Used by
+     * the self-service wizard and the printable record to decide whether
+     * to show/require that section.
+     */
+    public const BUILDING_TYPES = ['house', 'apartment', 'commercial_building', 'office_space', 'industrial_property'];
+
     protected $fillable = [
         'property_code',
         'owner_client_id',
         'user_id',
         'ownership_role',
+        'owner_full_name',
+        'owner_citizenship_no',
+        'owner_relation',
         'property_type',
         'address_id',
         'kitta_no',
@@ -45,8 +57,8 @@ class Property extends Model
 
     protected $casts = [
         'year_of_construction' => 'integer',
-        'no_of_floors'         => 'integer',
-        'is_listed'            => 'boolean',
+        'no_of_floors' => 'integer',
+        'is_listed' => 'boolean',
     ];
 
     public function owner(): BelongsTo
@@ -92,5 +104,27 @@ class Property extends Model
     public function valuationRequests(): HasMany
     {
         return $this->hasMany(ValuationRequest::class, 'property_id', 'property_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PropertyDocument::class, 'property_id', 'property_id');
+    }
+
+    public function features(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PropertyFeatureType::class,
+            'property_features',
+            'property_id',
+            'feature_id',
+            'property_id',
+            'feature_id',
+        );
+    }
+
+    public function isBuildingType(): bool
+    {
+        return in_array($this->property_type, self::BUILDING_TYPES, true);
     }
 }

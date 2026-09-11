@@ -12,6 +12,7 @@ use App\Http\Controllers\DocumentsController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\KycController;
 use App\Http\Controllers\MarketplaceController;
+use App\Http\Controllers\MyPropertyPdfController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyInquiryController;
@@ -56,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware('auth')->get('/kyc/pdf', [KycController::class, 'downloadMyPdf'])->name('kyc.my.pdf');
+Route::middleware('auth')->get('/my-properties/{property}/pdf', [MyPropertyPdfController::class, 'download'])->name('my-properties.pdf');
 
 // Named route used by Breeze auth redirects and KYC/property controllers.
 // Maps legacy ?tab= query params to the Filament user panel pages.

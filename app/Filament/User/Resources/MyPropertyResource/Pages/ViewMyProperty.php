@@ -3,40 +3,30 @@
 namespace App\Filament\User\Resources\MyPropertyResource\Pages;
 
 use App\Filament\User\Resources\MyPropertyResource;
-use Filament\Actions;
+use App\Models\Property;
 use Filament\Resources\Pages\ViewRecord;
 
+/**
+ * A single, continuous, printable Annex-A record — the same content-plan
+ * pattern used for the KYC summary page (masthead, seal, numbered
+ * sections, submission strip, signatures), kept in parity with this
+ * resource's own PDF export. Unlike KYC (one record per user, so the page
+ * toggles between an editable wizard and a locked summary), a property
+ * owner has many records, so this is simply the resource's normal "view"
+ * page with a fully custom view — editing happens on the separate Edit
+ * page, gated by MyPropertyResource::canEdit().
+ */
 class ViewMyProperty extends ViewRecord
 {
     protected static string $resource = MyPropertyResource::class;
 
-    protected function mutateFormDataBeforeFill(array $data): array
+    protected string $view = 'filament.user.pages.my-property-record';
+
+    public function getRecord(): Property
     {
-        $property = $this->record;
-        if ($property->address) {
-            $data['province'] = $property->address->province;
-            $data['district'] = $property->address->district;
-            $data['municipality'] = $property->address->municipality;
-            $data['ward_no'] = $property->address->ward_no;
-            $data['tole_locality'] = $property->address->tole_locality;
-        }
+        /** @var Property $record */
+        $record = $this->record->loadMissing(['address', 'photos', 'documents.docType', 'features', 'listings.assignedOfficer', 'owner', 'user.kycVerification']);
 
-        $listing = $property->listings()->latest()->first();
-        if ($listing) {
-            $data['purpose_of_listing'] = $listing->purpose_of_listing;
-            $data['expected_selling_price'] = $listing->expected_selling_price;
-            $data['rental_amount'] = $listing->rental_amount;
-        }
-
-        $data['property_photos'] = $property->photos()->pluck('file_ref')->toArray();
-
-        return $data;
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\EditAction::make(),
-        ];
+        return $record;
     }
 }
