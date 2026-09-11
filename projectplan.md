@@ -440,6 +440,53 @@ Investor's demo KYC is deliberately left `pending` so the verify/approve
 flow has a live example to click through; Tenant and Agent are
 pre-approved so their own portal features stay testable.
 
+**Follow-up — full Annex-F parity + a cleaner, single-page result.** After
+checking the KYC form against the actual 10-section Annex F structure
+(the reference implementation already exists in
+`resources/views/pdf/client_registration.blade.php`, the staff-side
+public intake form), three sections were still missing from the
+self-service KYC flow:
+
+- [x] **§4 Organization Details (if applicable)** — new
+      `kyc_organization_details` table (1:1 with `kyc_verifications`),
+      only kept while at least one field is filled in, since an
+      individual applicant has nothing to put here.
+- [x] **§5 Property Requirement Details** — new `kyc_property_requirements`
+      table, same "only keep if filled in" rule; purpose/property type/
+      location/area/budget/timeline for Buyer, Investor, or Tenant
+      applicants.
+- [x] **§7 Required Service Selection** — new `kyc_service_requests`
+      table (many-to-many against the existing `service_types` lookup),
+      a simple checkbox list synced on every submission.
+- **§6 Property Owner Details is deliberately not included** — per
+      instruction, that belongs to a later "list my property" step, not
+      identity KYC itself.
+
+Both the Wizard (two new steps) and the PDF (renumbered to match Annex
+F's own section numbers exactly, including the intentional gap at §6)
+were updated together so the two never disagree about what Annex F
+contains. The admin resource also gained read-only summaries of all
+three sections so reviewers see the same information.
+
+**Also simplified the page itself**, per direction to make it cleaner
+and to show everything in one place once submitted: replaced the busy,
+multi-colored status banners with one plain status bar (a colored dot +
+label + stage counter, no gradients or animation), and — the more
+substantial change — a locked/submitted record no longer re-renders the
+disabled multi-step Wizard at all. Instead it shows one continuous,
+printable summary page (every section, in reading order, with a browser
+Print button alongside the existing PDF download) built directly from
+the same data the PDF uses, so "preview" and "print" are two views of
+the same underlying record rather than two things that could drift apart.
+
+Verified: organization/property-requirement/service-selection data
+created directly against a throwaway KYC record surfaces correctly in
+all three places — the single-page summary view, the admin resource, and
+the PDF (checked by asserting the actual submitted values, e.g. an
+organization name and a selected service name, appear in each rendered
+output) — and the existing demo logins (mixed approved/pending) all
+still render the page correctly after the change.
+
 ## Deferred / Out of Scope for Now
 
 - **Native mobile apps** (Customer/Buyer/Investor/Tenant) — treated as

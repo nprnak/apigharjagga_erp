@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -118,6 +119,32 @@ class KycVerification extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(KycVerificationDocument::class, 'kyc_verification_id', 'id');
+    }
+
+    /**
+     * Annex F §4 — only present when the applicant registered on behalf of
+     * an organization; a HasOne so it's easy to check "is this applicable"
+     * via `$kyc->organization`.
+     */
+    public function organization(): HasOne
+    {
+        return $this->hasOne(KycOrganizationDetail::class, 'kyc_verification_id', 'id');
+    }
+
+    /**
+     * Annex F §5 — the applicant's property search profile (Buyer/Investor/Tenant).
+     */
+    public function propertyRequirement(): HasOne
+    {
+        return $this->hasOne(KycPropertyRequirement::class, 'kyc_verification_id', 'id');
+    }
+
+    /**
+     * Annex F §7 — the services the applicant has requested.
+     */
+    public function serviceRequests(): HasMany
+    {
+        return $this->hasMany(KycServiceRequest::class, 'kyc_verification_id', 'id');
     }
 
     /**

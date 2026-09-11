@@ -155,6 +155,70 @@ class KycVerificationResource extends Resource
                                 ),
                                 TextInput::make('current_tole')->label('Tole / Locality')->columnSpanFull(),
                             ]),
+
+                        Section::make('Organization Details (If Applicable)')
+                            ->icon('heroicon-o-building-office')
+                            ->collapsible()
+                            ->collapsed(fn (?KycVerification $record) => ! $record?->organization)
+                            ->schema([
+                                Placeholder::make('organization_summary')
+                                    ->label('')
+                                    ->content(function (?KycVerification $record) {
+                                        $org = $record?->organization;
+                                        if (! $org) {
+                                            return 'Not applicable — individual applicant.';
+                                        }
+
+                                        return new HtmlString(nl2br(e(collect([
+                                            'Organization: '.($org->organization_name ?? '—'),
+                                            'Registration No.: '.($org->registration_no ?? '—'),
+                                            'PAN/VAT No.: '.($org->pan_vat_no ?? '—'),
+                                            'Authorized Person: '.($org->authorized_person ?? '—').' ('.($org->designation ?? '—').')',
+                                            'Office Address: '.($org->office_address ?? '—'),
+                                        ])->implode("\n"))));
+                                    }),
+                            ]),
+
+                        Section::make('Property Requirement Details')
+                            ->icon('heroicon-o-magnifying-glass')
+                            ->collapsible()
+                            ->collapsed(fn (?KycVerification $record) => ! $record?->propertyRequirement)
+                            ->schema([
+                                Placeholder::make('property_requirement_summary')
+                                    ->label('')
+                                    ->content(function (?KycVerification $record) {
+                                        $req = $record?->propertyRequirement;
+                                        if (! $req) {
+                                            return 'Not provided.';
+                                        }
+
+                                        return new HtmlString(nl2br(e(collect([
+                                            'Purpose: '.($req->purpose ? ucfirst($req->purpose) : '—'),
+                                            'Property Type: '.($req->property_type ? ucfirst($req->property_type) : '—'),
+                                            'Preferred Location: '.($req->preferred_location ?? '—'),
+                                            'Required Area: '.($req->required_area ?? '—'),
+                                            'Estimated Budget: '.($req->estimated_budget ? 'Rs. '.number_format((float) $req->estimated_budget, 2) : '—'),
+                                            'Timeline: '.($req->purchase_timeline ?? '—'),
+                                        ])->implode("\n"))));
+                                    }),
+                            ]),
+
+                        Section::make('Required Service Selection')
+                            ->icon('heroicon-o-clipboard-document-list')
+                            ->collapsible()
+                            ->schema([
+                                Placeholder::make('service_requests_summary')
+                                    ->label('')
+                                    ->content(function (?KycVerification $record) {
+                                        $services = $record?->serviceRequests()->with('serviceType')->get()
+                                            ->map(fn ($sr) => $sr->serviceType?->service_name)
+                                            ->filter();
+
+                                        return $services && $services->isNotEmpty()
+                                            ? $services->implode(', ')
+                                            : 'None selected';
+                                    }),
+                            ]),
                     ]),
 
                 // ---- Documents + submission meta, sidebar -----------------

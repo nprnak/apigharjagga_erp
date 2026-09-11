@@ -17,7 +17,10 @@ class KycController extends Controller
         // exhaust the PHP memory limit. Downscaling first keeps memory bounded.
         ini_set('memory_limit', '512M');
 
-        $kyc = KycVerification::with(['user', 'documents.docType', 'verifiedBy', 'approvedBy'])->findOrFail($id);
+        $kyc = KycVerification::with([
+            'user', 'documents.docType', 'verifiedBy', 'approvedBy',
+            'organization', 'propertyRequirement', 'serviceRequests.serviceType',
+        ])->findOrFail($id);
 
         return $this->renderPdf($kyc);
     }
@@ -31,7 +34,10 @@ class KycController extends Controller
         ini_set('memory_limit', '512M');
 
         $user = $request->user();
-        $user->loadMissing(['kycVerification.documents.docType', 'kycVerification.verifiedBy', 'kycVerification.approvedBy']);
+        $user->loadMissing([
+            'kycVerification.documents.docType', 'kycVerification.verifiedBy', 'kycVerification.approvedBy',
+            'kycVerification.organization', 'kycVerification.propertyRequirement', 'kycVerification.serviceRequests.serviceType',
+        ]);
 
         $kyc = $user->kycVerification;
 

@@ -136,7 +136,12 @@
     </tr>
 </table>
 
-<div class="section-heading">1. Personal Information <span class="np">/ व्यक्तिगत विवरण</span></div>
+<div class="section-heading">1. Client Type <span class="np">/ ग्राहकको प्रकार</span></div>
+<table class="data-table">
+    <tr><td class="label">Type</td><td class="value">{{ $kyc->user?->client_type ? ucfirst($kyc->user->client_type) : '—' }}</td></tr>
+</table>
+
+<div class="section-heading">2. Personal Information <span class="np">/ व्यक्तिगत विवरण</span></div>
 <table class="data-table">
     <tr><td class="label">Full Name</td><td class="value np">{{ $kyc->full_name ?? '—' }}</td></tr>
     <tr><td class="label">Father / Mother Name</td><td class="value np">{{ $kyc->father_mother_name ?? '—' }}</td></tr>
@@ -149,22 +154,58 @@
     <tr><td class="label">Occupation</td><td class="value np">{{ $kyc->occupation ?? '—' }}</td></tr>
 </table>
 
-<div class="section-heading">2. Contact Details <span class="np">/ सम्पर्क विवरण</span></div>
+<div class="section-heading">3. Contact Details <span class="np">/ सम्पर्क विवरण</span></div>
 <table class="data-table">
     <tr><td class="label">Mobile No.</td><td class="value">{{ $kyc->mobile_no ?? '—' }}</td></tr>
     <tr><td class="label">Alternate Contact No.</td><td class="value">{{ $kyc->alt_contact_no ?? '—' }}</td></tr>
     <tr><td class="label">Telephone No.</td><td class="value">{{ $kyc->telephone_no ?? '—' }}</td></tr>
     <tr><td class="label">Email</td><td class="value">{{ $kyc->email ?? '—' }}</td></tr>
+    <tr><td class="label">Permanent Address</td><td class="value np">{{ $permanent }}</td></tr>
+    <tr><td class="label">Current Address</td><td class="value np">{{ $current }}</td></tr>
     <tr><td class="label">User Account</td><td class="value">{{ $kyc->user ? collect([$kyc->user->name, $kyc->user->email])->filter()->implode(' · ') : '—' }}</td></tr>
 </table>
 
-<div class="section-heading">3. Address <span class="np">/ ठेगाना</span></div>
+<div class="section-heading">4. Organization Details (If Applicable) <span class="np">/ संस्था सम्बन्धी विवरण</span></div>
+@if($kyc->organization)
 <table class="data-table">
-    <tr><td class="label">Permanent Address</td><td class="value np">{{ $permanent }}</td></tr>
-    <tr><td class="label">Current Address</td><td class="value np">{{ $current }}</td></tr>
+    <tr><td class="label">Organization Name</td><td class="value np">{{ $kyc->organization->organization_name ?? '—' }}</td></tr>
+    <tr><td class="label">Registration No.</td><td class="value">{{ $kyc->organization->registration_no ?? '—' }}</td></tr>
+    <tr><td class="label">PAN / VAT No.</td><td class="value">{{ $kyc->organization->pan_vat_no ?? '—' }}</td></tr>
+    <tr><td class="label">Authorized Person</td><td class="value np">{{ $kyc->organization->authorized_person ?? '—' }}</td></tr>
+    <tr><td class="label">Designation</td><td class="value">{{ $kyc->organization->designation ?? '—' }}</td></tr>
+    <tr><td class="label">Office Address</td><td class="value np">{{ $kyc->organization->office_address ?? '—' }}</td></tr>
+</table>
+@else
+<p style="font-size:9.5pt; color:#555;">Not applicable — individual applicant.</p>
+@endif
+
+<div class="section-heading">5. Property Requirement Details <span class="np">/ सम्पत्ति आवश्यकता</span></div>
+@if($kyc->propertyRequirement)
+<table class="data-table">
+    <tr><td class="label">Purpose</td><td class="value">{{ $kyc->propertyRequirement->purpose ? ucfirst($kyc->propertyRequirement->purpose) : '—' }}</td></tr>
+    <tr><td class="label">Property Type</td><td class="value">{{ $kyc->propertyRequirement->property_type ? ucfirst($kyc->propertyRequirement->property_type) : '—' }}</td></tr>
+    <tr><td class="label">Preferred Location</td><td class="value np">{{ $kyc->propertyRequirement->preferred_location ?? '—' }}</td></tr>
+    <tr><td class="label">Required Area</td><td class="value">{{ $kyc->propertyRequirement->required_area ?? '—' }}</td></tr>
+    <tr><td class="label">Estimated Budget</td><td class="value">{{ $kyc->propertyRequirement->estimated_budget ? 'Rs. '.number_format((float) $kyc->propertyRequirement->estimated_budget, 2) : '—' }}</td></tr>
+    <tr><td class="label">Purchase Timeline</td><td class="value">{{ $kyc->propertyRequirement->purchase_timeline ?? '—' }}</td></tr>
+</table>
+@else
+<p style="font-size:9.5pt; color:#555;">Not provided.</p>
+@endif
+
+<div class="page-break" style="page-break-before: always;"></div>
+
+<div class="section-heading">7. Required Service Selection <span class="np">/ आवश्यक सेवा छनोट</span></div>
+<table class="checklist-table">
+    <tr><th style="width:60%;">Service</th><th style="width:40%;">Selected</th></tr>
+    @forelse($kyc->serviceRequests as $sr)
+        <tr><td>{{ $sr->serviceType?->service_name ?? 'Service' }}</td><td><span class="check-yes">&#10003; Yes</span></td></tr>
+    @empty
+        <tr><td colspan="2">None selected</td></tr>
+    @endforelse
 </table>
 
-<div class="section-heading">4. Identity Document <span class="np">/ परिचयपत्र</span></div>
+<div class="section-heading">Identity Document <span class="np">/ परिचयपत्र</span></div>
 <table class="data-table">
     <tr><td class="label">ID Type</td><td class="value">{{ $idTypeLabel }}</td></tr>
 </table>
@@ -189,7 +230,7 @@
     </tr>
 </table>
 
-<div class="section-heading">5. Document Checklist <span class="np">/ कागजात सूची</span></div>
+<div class="section-heading">8. Document Submission Checklist <span class="np">/ कागजात चेकलिस्ट</span></div>
 <table class="checklist-table">
     <tr>
         <th style="width:60%;">Document</th>
@@ -211,7 +252,7 @@
     @endforelse
 </table>
 
-<div class="section-heading">6. Verification Status <span class="np">/ प्रमाणीकरण अवस्था</span></div>
+<div class="section-heading">9. Verification Status <span class="np">/ प्रमाणीकरण अवस्था</span></div>
 <table class="data-table">
     <tr><td class="label">Status</td><td class="value">{{ ucfirst($kyc->status) }}</td></tr>
     <tr><td class="label">Submitted At</td><td class="value">{{ optional($kyc->submitted_at)->format('Y-m-d H:i') ?: '—' }}</td></tr>
@@ -224,6 +265,7 @@
 </div>
 @endif
 
+<div class="section-heading">10. Client Declaration <span class="np">/ ग्राहक घोषणा</span></div>
 <div class="declaration-box">
     I, {{ $kyc->full_name ?? 'the applicant' }}, hereby declare that the information and documents provided above are
     true and correct to the best of my knowledge, as required under Annex F of API GharJagga's client registration process.
