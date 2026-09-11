@@ -487,6 +487,55 @@ organization name and a selected service name, appear in each rendered
 output) — and the existing demo logins (mixed approved/pending) all
 still render the page correctly after the change.
 
+**Second follow-up — §1 Client Type visibility, multi-select §5, and a
+verifier-owned §9.** Three more corrections after review:
+
+- [x] **§1 Client Type wasn't visible anywhere in the KYC form itself** —
+      it only showed up in the PDF. Added a read-only pill display (the
+      applicant's `client_type`, set at registration) at the top of the
+      Wizard's Personal Details step and as its own numbered section on
+      the single-page summary and PDF.
+- [x] **§5 Purpose and Property Type needed to allow multiple selections**
+      (e.g. a buyer open to either purchase *or* rent, interested in
+      either a house *or* an apartment) — both were single-value enum
+      columns. Migrated `kyc_property_requirements.purpose` and
+      `.property_type` to JSON arrays, changed the Wizard fields from a
+      `Select` to a `CheckboxList`, and updated every place that reads
+      them (summary page, admin resource, PDF) to render the selected
+      values as a set of pills rather than a single value.
+- [x] **§9 Digital Registration Details is filled in by the verifying
+      staff member, not the applicant** — added `digital_client_id`
+      (auto-generated the moment a record is verified,
+      `KycVerification::generateDigitalClientId()`) and
+      `mobile_app_user_id` (typed in by the verifier, defaulting to the
+      applicant's own user id) to `kyc_verifications`. The admin
+      resource's **Verify** action now collects the Mobile App User ID
+      alongside the verifying staff member, and Registration Date /
+      Registered By are simply `verified_at` / `verifiedBy` — the same
+      staff action that verifies also completes §9 in one step, matching
+      the fact that the Annex F reference lists all four §9 items as
+      staff-entered rather than applicant-entered.
+- [x] **Visual pass on both the summary page and the PDF**, matching a
+      supplied "official document" reference more closely: a masthead
+      with org name/doc reference, a submission-details strip, numbered
+      section badges, and a rotating registration/approval seal —
+      "APPROVED" (green) once a record clears final approval, shown on
+      both the in-app summary and the downloadable PDF. Purpose, Property
+      Type, and Client Type all render as pill/checklist widgets (filled
+      pill = selected) instead of plain text, consistent with how the
+      Document Checklist and Service Selection sections already looked.
+
+Verified: multi-select purpose/property type round-trips correctly
+end-to-end (created with two values each, confirmed both appear,
+comma-joined, in the admin resource, and both render as filled pills on
+the summary page); the Verify action's new Mobile App User ID field
+persists and surfaces correctly in the summary, admin view, and PDF's §9
+section; the approval seal renders on both the summary page and the PDF
+only once a record reaches `approved`; and all pre-existing demo KYC
+records (approved directly by the seeder, never through the Verify
+action, so `digital_client_id` is null) still render cleanly everywhere
+rather than erroring on the missing value.
+
 ## Deferred / Out of Scope for Now
 
 - **Native mobile apps** (Customer/Buyer/Investor/Tenant) — treated as

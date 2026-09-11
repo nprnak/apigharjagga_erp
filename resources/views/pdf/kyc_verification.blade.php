@@ -84,6 +84,20 @@
         .sig-name { font-size: 9pt; margin-top: 2px; }
 
         .footer { margin-top: 14px; padding-top: 5px; border-top: 1px solid #000; text-align: center; font-size: 7.5pt; color: #555; }
+
+        .stamp {
+            position: absolute;
+            top: 20mm;
+            right: 18mm;
+            border: 2.5px double #14532d;
+            color: #14532d;
+            padding: 5px 14px 6px;
+            text-align: center;
+            transform: rotate(-8deg);
+        }
+        .stamp .s1 { font-size: 12pt; font-weight: bold; letter-spacing: 2px; }
+        .stamp .s2 { font-size: 9pt; font-weight: bold; margin-top: -2px; }
+        .stamp .s3 { font-size: 7pt; border-top: 0.75px solid #14532d; margin-top: 3px; padding-top: 2px; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -112,6 +126,14 @@
     ])->filter()->implode(', ') ?: '—';
     $refNo = 'AGJ-KYC-' . str_pad((string) $kyc->id, 5, '0', STR_PAD_LEFT);
 @endphp
+
+@if($kyc->status === 'approved')
+<div class="stamp">
+    <div class="s1">APPROVED</div>
+    <div class="s2 np">स्वीकृत</div>
+    <div class="s3">{{ $kyc->digital_client_id ?? $refNo }} &middot; {{ optional($kyc->approved_at)->format('Y-m-d') }}</div>
+</div>
+@endif
 
 <table class="header-table">
     <tr>
@@ -180,10 +202,11 @@
 @endif
 
 <div class="section-heading">5. Property Requirement Details <span class="np">/ सम्पत्ति आवश्यकता</span></div>
+<p style="font-size:8.5pt; color:#555; margin-bottom:4px;">For Buyer / Investor / Tenant</p>
 @if($kyc->propertyRequirement)
 <table class="data-table">
-    <tr><td class="label">Purpose</td><td class="value">{{ $kyc->propertyRequirement->purpose ? ucfirst($kyc->propertyRequirement->purpose) : '—' }}</td></tr>
-    <tr><td class="label">Property Type</td><td class="value">{{ $kyc->propertyRequirement->property_type ? ucfirst($kyc->propertyRequirement->property_type) : '—' }}</td></tr>
+    <tr><td class="label">Purpose</td><td class="value">{{ filled($kyc->propertyRequirement->purpose) ? collect($kyc->propertyRequirement->purpose)->map(fn ($p) => ucfirst($p))->implode(', ') : '—' }}</td></tr>
+    <tr><td class="label">Property Type</td><td class="value">{{ filled($kyc->propertyRequirement->property_type) ? collect($kyc->propertyRequirement->property_type)->map(fn ($p) => ucfirst($p))->implode(', ') : '—' }}</td></tr>
     <tr><td class="label">Preferred Location</td><td class="value np">{{ $kyc->propertyRequirement->preferred_location ?? '—' }}</td></tr>
     <tr><td class="label">Required Area</td><td class="value">{{ $kyc->propertyRequirement->required_area ?? '—' }}</td></tr>
     <tr><td class="label">Estimated Budget</td><td class="value">{{ $kyc->propertyRequirement->estimated_budget ? 'Rs. '.number_format((float) $kyc->propertyRequirement->estimated_budget, 2) : '—' }}</td></tr>
@@ -252,11 +275,15 @@
     @endforelse
 </table>
 
-<div class="section-heading">9. Verification Status <span class="np">/ प्रमाणीकरण अवस्था</span></div>
+<div class="section-heading">9. Digital Registration Details <span class="np">/ डिजिटल दर्ता विवरण</span></div>
+<p style="font-size:8.5pt; color:#555; margin-bottom:4px;">Completed by the verifying officer</p>
 <table class="data-table">
+    <tr><td class="label">Client ID</td><td class="value">{{ $kyc->digital_client_id ?? '—' }}</td></tr>
+    <tr><td class="label">Registration Date</td><td class="value">{{ optional($kyc->verified_at)->format('Y-m-d') ?: '—' }}</td></tr>
+    <tr><td class="label">Registered By</td><td class="value">{{ $kyc->verifiedBy?->full_name ?? '—' }}</td></tr>
+    <tr><td class="label">Mobile App User ID</td><td class="value">{{ $kyc->mobile_app_user_id ?? '—' }}</td></tr>
     <tr><td class="label">Status</td><td class="value">{{ ucfirst($kyc->status) }}</td></tr>
     <tr><td class="label">Submitted At</td><td class="value">{{ optional($kyc->submitted_at)->format('Y-m-d H:i') ?: '—' }}</td></tr>
-    <tr><td class="label">Verified By</td><td class="value">{{ $kyc->verifiedBy?->full_name ?? '—' }}{{ $kyc->verified_at ? ' — ' . $kyc->verified_at->format('Y-m-d H:i') : '' }}</td></tr>
     <tr><td class="label">Approved By</td><td class="value">{{ $kyc->approvedBy?->full_name ?? '—' }}{{ $kyc->approved_at ? ' — ' . $kyc->approved_at->format('Y-m-d H:i') : '' }}</td></tr>
 </table>
 @if($kyc->admin_note)

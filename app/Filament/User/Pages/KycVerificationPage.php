@@ -10,9 +10,11 @@ use App\Models\KycServiceRequest;
 use App\Models\KycVerification;
 use App\Models\KycVerificationDocument;
 use App\Models\ServiceType;
+use App\Models\User;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -170,6 +172,18 @@ class KycVerificationPage extends Page
                 ->description('Identity as printed on your government ID')
                 ->icon('heroicon-o-user-circle')
                 ->schema([
+                    Section::make('1. Client Type (ग्राहकको प्रकार)')
+                        ->description('Set when you registered — change it from your account settings, not here.')
+                        ->schema([
+                            Placeholder::make('client_type_display')
+                                ->label('')
+                                ->content(fn () => new HtmlString(
+                                    '<span class="fi-badge inline-flex items-center rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700 ring-1 ring-primary-600/20 dark:bg-primary-400/10 dark:text-primary-400">'
+                                    .e(User::clientTypeOptions()[Auth::user()?->client_type] ?? ucfirst((string) Auth::user()?->client_type))
+                                    .'</span>',
+                                )),
+                        ]),
+
                     Grid::make(2)->schema([
                         TextInput::make('full_name')
                             ->label('Full Legal Name (पूरा नाम)')
@@ -319,20 +333,20 @@ class KycVerificationPage extends Page
                 ->description('For buyers, investors, and tenants — tell us what you\'re looking for')
                 ->icon('heroicon-o-magnifying-glass')
                 ->schema([
-                    Section::make('Property Requirement Details (सम्पत्ति आवश्यकता)')
-                        ->description('Optional — fill in if you are looking to buy, invest, or rent.')
-                        ->columns(2)
+                    Section::make('5. Property Requirement Details (सम्पत्ति आवश्यकता)')
+                        ->description('For Buyer / Investor / Tenant — optional, select as many as apply.')
                         ->schema([
-                            Select::make('purpose')
+                            CheckboxList::make('purpose')
                                 ->label('Purpose (उद्देश्य)')
                                 ->options([
                                     'purchase' => 'Purchase',
                                     'investment' => 'Investment',
                                     'rent' => 'Rent',
                                 ])
-                                ->native(false),
-                            Select::make('property_type')
-                                ->label('Property Type (सम्पत्तिको किसिम)')
+                                ->columns(3)
+                                ->gridDirection('row'),
+                            CheckboxList::make('property_type')
+                                ->label('Property Type (सम्पत्तिको प्रकार)')
                                 ->options([
                                     'land' => 'Land',
                                     'house' => 'House',
@@ -340,21 +354,24 @@ class KycVerificationPage extends Page
                                     'commercial' => 'Commercial',
                                     'other' => 'Other',
                                 ])
-                                ->native(false),
-                            TextInput::make('preferred_location')
-                                ->label('Preferred Location (रुचाइएको स्थान)')
-                                ->maxLength(200),
-                            TextInput::make('required_area')
-                                ->label('Required Area (आवश्यक क्षेत्रफल)')
-                                ->maxLength(100),
-                            TextInput::make('estimated_budget')
-                                ->label('Estimated Budget (अनुमानित बजेट)')
-                                ->numeric()
-                                ->prefix('Rs.'),
-                            TextInput::make('purchase_timeline')
-                                ->label('Purchase Timeline (समयसीमा)')
-                                ->placeholder('e.g. Within 3 months')
-                                ->maxLength(100),
+                                ->columns(3)
+                                ->gridDirection('row'),
+                            Grid::make(2)->schema([
+                                TextInput::make('preferred_location')
+                                    ->label('Preferred Location (रुचाइएको स्थान)')
+                                    ->maxLength(200),
+                                TextInput::make('required_area')
+                                    ->label('Required Area (आवश्यक क्षेत्रफल)')
+                                    ->maxLength(100),
+                                TextInput::make('estimated_budget')
+                                    ->label('Estimated Budget (अनुमानित बजेट)')
+                                    ->numeric()
+                                    ->prefix('Rs.'),
+                                TextInput::make('purchase_timeline')
+                                    ->label('Purchase Timeline (समयसीमा)')
+                                    ->placeholder('e.g. Within 3 months')
+                                    ->maxLength(100),
+                            ]),
                         ]),
 
                     Section::make('Required Service Selection (आवश्यक सेवा छनोट)')
@@ -502,8 +519,8 @@ class KycVerificationPage extends Page
             'office_address' => $state['office_address'] ?? null,
         ];
         $propertyRequirementData = [
-            'purpose' => $state['purpose'] ?? null,
-            'property_type' => $state['property_type'] ?? null,
+            'purpose' => $state['purpose'] ?? [],
+            'property_type' => $state['property_type'] ?? [],
             'preferred_location' => $state['preferred_location'] ?? null,
             'required_area' => $state['required_area'] ?? null,
             'estimated_budget' => $state['estimated_budget'] ?? null,

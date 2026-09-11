@@ -193,8 +193,8 @@ class KycVerificationResource extends Resource
                                         }
 
                                         return new HtmlString(nl2br(e(collect([
-                                            'Purpose: '.($req->purpose ? ucfirst($req->purpose) : '—'),
-                                            'Property Type: '.($req->property_type ? ucfirst($req->property_type) : '—'),
+                                            'Purpose: '.(filled($req->purpose) ? collect($req->purpose)->map(fn ($p) => ucfirst($p))->implode(', ') : '—'),
+                                            'Property Type: '.(filled($req->property_type) ? collect($req->property_type)->map(fn ($p) => ucfirst($p))->implode(', ') : '—'),
                                             'Preferred Location: '.($req->preferred_location ?? '—'),
                                             'Required Area: '.($req->required_area ?? '—'),
                                             'Estimated Budget: '.($req->estimated_budget ? 'Rs. '.number_format((float) $req->estimated_budget, 2) : '—'),
@@ -300,6 +300,24 @@ class KycVerificationResource extends Resource
                                         ? $record->approvedBy->full_name.' — '.optional($record->approved_at)->format('d M Y, H:i')
                                         : '—'),
                             ]),
+
+                        Section::make('Digital Registration Details (§9)')
+                            ->description('Filled in by the verifying staff member — set on the Verify action.')
+                            ->icon('heroicon-o-identification')
+                            ->schema([
+                                Placeholder::make('digital_client_id')
+                                    ->label('Client ID')
+                                    ->content(fn (?KycVerification $record) => $record?->digital_client_id ?: 'Assigned on verification'),
+                                Placeholder::make('registration_date')
+                                    ->label('Registration Date')
+                                    ->content(fn (?KycVerification $record) => optional($record?->verified_at)->format('d M Y') ?: '—'),
+                                Placeholder::make('registered_by')
+                                    ->label('Registered By')
+                                    ->content(fn (?KycVerification $record) => $record?->verifiedBy?->full_name ?? '—'),
+                                Placeholder::make('mobile_app_user_id_display')
+                                    ->label('Mobile App User ID')
+                                    ->content(fn (?KycVerification $record) => $record?->mobile_app_user_id ?: '—'),
+                            ]),
                     ]),
             ]);
     }
@@ -379,6 +397,7 @@ class KycVerificationResource extends Resource
                     ->color('info')
                     ->visible(fn (KycVerification $record) => $record->status === 'pending' && static::userCan('kyc.verify'))
                     ->requiresConfirmation()
+                    ->modalDescription('Verifying also records the Annex F §9 Digital Registration Details below.')
                     ->form([
                         Select::make('verified_by_staff_id')
                             ->label('Verified By (Staff)')
@@ -386,12 +405,19 @@ class KycVerificationResource extends Resource
                             ->searchable()
                             ->native(false)
                             ->required(),
+                        TextInput::make('mobile_app_user_id')
+                            ->label('Mobile App User ID (डिजिटल दर्ता — मोबाइल एप प्रयोगकर्ता आईडी)')
+                            ->helperText('Confirm or enter the applicant\'s mobile app account identifier.')
+                            ->default(fn (KycVerification $record) => $record->mobile_app_user_id ?: (string) $record->user_id)
+                            ->maxLength(50),
                     ])
                     ->action(function (KycVerification $record, array $data) {
                         $record->update([
                             'status' => 'verified',
                             'verified_by_staff_id' => $data['verified_by_staff_id'],
                             'verified_at' => now(),
+                            'digital_client_id' => $record->digital_client_id ?: KycVerification::generateDigitalClientId(),
+                            'mobile_app_user_id' => $data['mobile_app_user_id'] ?: null,
                             'admin_note' => null,
                         ]);
                         Notification::make()->title('KYC verified — awaiting final approval')->success()->send();

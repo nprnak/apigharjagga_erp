@@ -21,6 +21,8 @@ class KycPropertyRequirement extends Model
     ];
 
     protected $casts = [
+        'purpose' => 'array',
+        'property_type' => 'array',
         'estimated_budget' => 'decimal:2',
         'updated_at' => 'datetime',
     ];

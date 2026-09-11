@@ -44,6 +44,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $verified_at
  * @property int|null $approved_by_staff_id
  * @property Carbon|null $approved_at
+ * @property string|null $digital_client_id
+ * @property string|null $mobile_app_user_id
  * @property string|null $admin_note
  * @property Carbon|null $submitted_at
  * @property Carbon|null $reviewed_at
@@ -87,6 +89,8 @@ class KycVerification extends Model
         'verified_at',
         'approved_by_staff_id',
         'approved_at',
+        'digital_client_id',
+        'mobile_app_user_id',
         'admin_note',
         'submitted_at',
         'reviewed_at',
@@ -155,5 +159,20 @@ class KycVerification extends Model
     public static function requiredDocumentTypeNames(): array
     {
         return ['Citizenship Copy', 'Passport Size Photo', 'Proof of Current Address'];
+    }
+
+    /**
+     * Annex F §9 "Digital Registration Details" is filled in by the
+     * verifying staff member, not the applicant — the Client ID is
+     * generated the moment a record first passes verification, in the
+     * same AGJ-xxxxxx shape used elsewhere in this app (e.g. client_code).
+     */
+    public static function generateDigitalClientId(): string
+    {
+        do {
+            $candidate = 'AGJ-KYC-'.now()->format('y').'-'.str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        } while (self::where('digital_client_id', $candidate)->exists());
+
+        return $candidate;
     }
 }
